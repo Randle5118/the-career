@@ -1,0 +1,47 @@
+---
+globs: app/api/**/*.ts
+description: API routes development patterns and standards
+---
+
+# API Routes Standards
+
+## API Route Patterns
+- Use proper HTTP methods (GET, POST, PUT, DELETE)
+- Always validate request bodies
+- Use proper error handling with try-catch
+- Return consistent JSON responses with proper status codes
+- Connect to MongoDB before database operations using `connectMongo()`
+- Use NextAuth session for authentication when needed
+
+## Database Operations
+- Always connect to MongoDB before operations using [libs/mongo.ts](mdc:libs/mongo.ts)
+- Use Mongoose for MongoDB operations
+- Define proper schemas with TypeScript interfaces
+- Use proper error handling for database operations
+- Use proper validation in models
+
+## Authentication
+- Use NextAuth v5 patterns
+- Check authentication in API routes when needed
+- Use proper session handling
+- Implement proper user creation and updates
+
+## Stripe Integration
+- Use proper webhook signature verification
+- Handle all relevant Stripe events properly
+- Update user access based on payment status
+- Use proper error handling for Stripe operations
+- Store customer and subscription data in user model
+
+## Security
+- Validate all inputs
+- Use proper CSRF protection
+- Verify webhook signatures
+- Sanitize user data
+- Use proper authentication checks
+
+## Example API Routes
+- Authentication: [app/api/auth/](mdc:app/api/auth/)
+- Stripe: [app/api/stripe/](mdc:app/api/stripe/)
+- Webhooks: [app/api/webhook/](mdc:app/api/webhook/)
+- Lead: [app/api/lead/](mdc:app/api/lead/)

@@ -1,0 +1,45 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript specific coding standards and patterns
+---
+
+# TypeScript Specific Rules
+
+## TypeScript Standards
+- Always use strict TypeScript with proper typing
+- Prefer `interface` over `type` for object definitions
+- Use proper generic types for reusable components
+- Import types using `import type { }` when possible
+- Use Zod for runtime validation when needed
+- Never use `any` type unless absolutely necessary
+- Don't bypass TypeScript strict mode
+
+## Component Patterns
+- Use functional components with hooks
+- Prefer server components by default, use "use client" only when necessary
+- Export default for main component, named exports for utilities
+- Keep components focused and single-responsibility
+- Use proper TypeScript interfaces for props
+- Don't create components without proper TypeScript interfaces
+
+## Import Order for TypeScript Files
+1. React and Next.js imports
+2. Third-party libraries
+3. Internal components (components/)
+4. Internal utilities (libs/)
+5. Internal types (types/)
+6. Config and constants
+7. Relative imports
+
+## File Structure References
+- API routes: [app/api/](mdc:app/api/)
+- Components: [components/](mdc:components/)
+- Types: [types/](mdc:types/)
+- Utils/Libs: [libs/](mdc:libs/)
+- Models: [models/](mdc:models/)
+
+## Error Handling
+- Use try-catch blocks in API routes
+- Handle loading and error states in components
+- Don't skip error handling in async operations
+- Use proper error handling with toast notifications
