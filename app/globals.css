@@ -4,7 +4,9 @@
 }
 
 @theme {
-  --font-display: "Satoshi", "sans-serif";
+  /* 組合英文和日文字體，優先使用 Inter，日文使用 Noto Sans JP */
+  --font-sans: var(--font-inter), var(--font-noto-sans-jp), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-inter), var(--font-noto-sans-jp), system-ui, -apple-system, sans-serif;
   
   --animate-shimmer: shimmer 3s ease-out infinite alternate;
   --animate-opacity: opacity 0.25s ease-in-out;
@@ -46,6 +48,7 @@
 html,
 body {
   scroll-behavior: smooth !important;
+  font-family: var(--font-inter), var(--font-noto-sans-jp), system-ui, -apple-system, sans-serif;
 }
 
 progress::-webkit-progress-value {
@@ -73,4 +76,14 @@ progress::-webkit-progress-value {
 
 .btn {
   text-transform: capitalize !important;
+}
+
+/* Hide scrollbar for horizontal tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }

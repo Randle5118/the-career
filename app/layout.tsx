@@ -1,12 +1,24 @@
 import { ReactNode } from "react";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Sans_JP } from "next/font/google";
 import { Viewport } from "next";
 import { getSEOTags } from "@/libs/seo";
-import ClientLayout from "@/components/LayoutClient";
+import ClientLayout from "@/components/layout/LayoutClient";
 import config from "@/config";
 import "./globals.css";
 
-const font = Inter({ subsets: ["latin"] });
+// 支援英文和日文的字體組合
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+const notoSansJP = Noto_Sans_JP({ 
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-noto-sans-jp",
+});
 
 export const viewport: Viewport = {
 	// Will use the primary color of your theme to show a nice theme color in the URL bar of supported browsers
@@ -22,11 +34,12 @@ export const metadata = getSEOTags();
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html
-			lang="en"
+			lang="ja"
 			data-theme={config.colors.theme}
-			className={font.className}
+			className={`${inter.variable} ${notoSansJP.variable}`}
+			suppressHydrationWarning
 		>
-			<body>
+			<body suppressHydrationWarning>
 				{/* ClientLayout contains all the client wrappers (Crisp chat support, toast messages, tooltips, etc.) */}
 				<ClientLayout>{children}</ClientLayout>
 			</body>

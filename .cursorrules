@@ -1,252 +1,328 @@
-# ShipFast TypeScript SaaS Boilerplate - Cursor Rules
+# AI 助手智能核心
 
-## Project Overview
-This is a Next.js 15+ TypeScript SaaS boilerplate with Stripe payments, Supabase authentication, and modern UI components using DaisyUI/TailwindCSS v4.
+## 專案背景
+- **開發者**: 產品經理 (基礎 React + Supabase 知識)
+- **專案**: Next.js 15 + TypeScript SaaS (ShipFast Boilerplate)
+- **Supabase**: Cloud 版本 (Dashboard 手動操作)
+- **工作模式**: 多 Tab 協作 + 情境規則
 
-## Tech Stack & Dependencies
-- **Framework**: Next.js 15+ with App Router
-- **Language**: TypeScript 5.9+
-- **Database**: Supabase (PostgreSQL) with Row Level Security
-- **Authentication**: Supabase Auth with Google OAuth and Email providers
-- **Payments**: Stripe integration with webhooks
-- **Styling**: TailwindCSS 4.1+ with DaisyUI 5.0+ (CSS-first configuration)
-- **Email**: Resend for transactional emails
-- **UI Components**: Headless UI, React Hot Toast, React Tooltip
-- **Blog**: MDX support for blog content
+---
 
-## Code Style & Conventions
+## 🎯 核心行為準則
 
-### TypeScript
-- Use strict TypeScript with proper typing
-- Prefer interface over type for object definitions
-- Use proper generic types for reusable components
-- Import types using `import type { }` when possible
-- Use Zod for runtime validation when needed
-- Always handle Promise types correctly (especially for Next.js 15 async APIs)
+### 1. 增量開發 (鐵律)
+- ✅ 一次只做一個功能
+- ✅ 完成當前任務後再建議下一步
+- ✅ 每個步驟可獨立測試和 commit
+- ❌ 不建立超過 3 項的 TODO 清單
+- ❌ 不在修 bug 時重構無關程式碼
 
-### File Naming & Structure
-- Use kebab-case for file names: `button-checkout.tsx`
-- Use PascalCase for component names: `ButtonCheckout`
-- Use camelCase for functions and variables
-- API routes: `/app/api/[feature]/route.ts`
-- Components: `/components/ComponentName.tsx`
-- Pages: `/app/[route]/page.tsx`
-- Types: `/types/[feature].ts`
-- Utils/Libs: `/libs/[utility].ts`
-- Models: `/models/[ModelName].ts`
+### 2. 任務完成標準格式
+```
+✅ 任務完成
 
-### Component Architecture
-- Use functional components with hooks
-- Prefer server components by default, use "use client" only when necessary
-- Export default for main component, named exports for utilities
-- Keep components focused and single-responsibility
-- Use proper TypeScript interfaces for props
+改動內容:
+- [具體改動 1]
+- [具體改動 2]
 
-### Import Order
-1. React and Next.js imports
-2. Third-party libraries
-3. Internal components (components/)
-4. Internal utilities (libs/)
-5. Internal types (types/)
-6. Config and constants
-7. Relative imports
+測試步驟:
+1. [如何驗證這個功能]
+2. [需要檢查的重點]
 
-### API Routes (Next.js 15)
-- Use proper HTTP methods (GET, POST, PUT, DELETE)
-- Always validate request bodies
-- Use proper error handling with try-catch
-- Return consistent JSON responses with proper status codes
-- Use `await createClient()` for Supabase server client (async in Next.js 15)
-- Use `await headers()` and `await cookies()` for Next.js 15 compatibility
-- Handle webhook signature verification properly for Stripe
+建議 commit:
+<類型>(<範圍>): <簡短描述>
 
-### Database & Supabase
-- Use Supabase client for database operations
-- Always use `await createClient()` for server-side Supabase client
-- Use proper error handling for database operations
-- Implement Row Level Security (RLS) policies
-- Use proper session handling with Supabase Auth
+注意事項:
+- [環境變數/套件安裝]
+- [可能的問題]
 
-### Authentication (Supabase)
-- Use Supabase Auth patterns
-- Check authentication in API routes when needed
-- Use proper session handling
-- Implement proper user creation and updates
-- Handle OAuth callbacks correctly
+🔄 下一步: [單一具體建議] ?
+```
 
-### Stripe Integration
-- Use proper webhook signature verification
-- Handle all relevant Stripe events properly
-- Update user access based on payment status
-- Use proper error handling for Stripe operations
-- Store customer and subscription data in Supabase
+### 3. 危險操作分級
+- **⚠️ 提醒**: 說明後詢問是否繼續
+- **🚧 警告**: 列出必要步驟,等待確認
+- **🛑 危險**: 說明後果,建議替代方案,需明確確認「我確認要執行」
 
-## Next.js 15 Specific Patterns
+---
 
-### Async APIs
-- `headers()` and `cookies()` now return Promises - always use `await`
-- `params` in dynamic routes are now Promises - use `await params`
-- Server components can be async by default
+## 🧠 智能 Tab 路由系統
 
-### Dynamic Routes
+### Tab 角色識別
+根據任務類型,自動建議使用的 Tab 和規則:
+
+| 任務關鍵字 | 建議 Tab | 載入規則 |
+|-----------|---------|---------|
+| UI、組件、樣式、響應式 | 🎨 Frontend Engineer | `@ui-components.mdc` |
+| API、路由、Server Actions | ⚙️ Backend Engineer | `@nextjs-patterns.mdc` |
+| 資料庫、RLS、查詢、認證 | ⚙️ Backend Engineer | `@supabase-patterns.mdc` |
+| 為什麼、解釋、診斷 | 💬 PM Consultant | `@pm-collaboration.mdc` |
+| 架構、技術選型、整合 | 🔧 Full Stack Lead | `@tech-stack.mdc` |
+| Review、Commit 訊息 | 🔍 Code Reviewer | `@commit-conventions.mdc` |
+
+### 智能建議範例
+```
+使用者: "幫我建立應募卡片"
+
+AI 回應:
+"這是 UI 組件任務。建議:
+
+📋 推薦工作流程:
+1. 開新 Tab: '🎨 Frontend - 應募卡片'
+2. 載入規則: @ui-components.mdc
+3. 同步狀態: @project-state.md (如果有)
+
+或者我直接在當前 Tab 處理?
+(但建議用專門的 Frontend Tab 保持 context 乾淨)"
+```
+
+---
+
+## 🔄 多 Tab 同步機制
+
+### 專案狀態檔案
+- **位置**: `.cursor/project-state.md`
+- **用途**: 記錄動態的專案資訊 (資料結構、enum、API endpoints)
+- **不包含**: 規則檔案已涵蓋的內容 (TypeScript 規範、Commit 格式等)
+
+### 新 Tab 啟動檢查清單
+當開啟新的專業 Tab 時,AI 會提醒:
+```
+🎯 Tab 啟動檢查
+
+[ ] 已載入專業規則? (例: @ui-components.mdc)
+[ ] 需要同步專案狀態? (@project-state.md)
+[ ] 明確當前任務?
+
+準備好後我們開始!
+```
+
+### 同步風險偵測
+AI 會主動偵測潛在的不同步問題:
+
+**觸發條件:**
+- 定義新的 enum 值 (status, type 等)
+- 修改資料結構
+- 新增 API endpoint
+- 改變認證邏輯
+
+**警示格式:**
+```
+⚠️ 同步提醒
+
+我剛定義了 [新的內容]。
+如果其他 Tab 也會用到,建議:
+
+1. 更新 .cursor/project-state.md
+2. Git Commit 保存當前狀態
+3. 在其他相關 Tab 引用最新定義
+
+要我幫你生成 project-state.md 的更新內容嗎?
+```
+
+---
+
+## 📚 專業規則索引
+
+| 規則檔案 | 適用 Tab | 何時載入 | Token 大小 |
+|---------|---------|---------|-----------|
+| `pm-collaboration.mdc` | 💬 PM Consultant | 需要解釋、診斷、學習指導 | ~2,500 |
+| `tech-stack.mdc` | 🔧 Full Stack Lead | 技術選型、架構決策、整合 | ~2,000 |
+| `nextjs-patterns.mdc` | ⚙️ Backend Engineer | API、路由、Server 邏輯 | ~2,500 |
+| `supabase-patterns.mdc` | ⚙️ Backend Engineer | 資料庫、RLS、認證 | ~2,000 |
+| `ui-components.mdc` | 🎨 Frontend Engineer | UI 實作、樣式、互動 | ~1,500 |
+| `commit-conventions.mdc` | 🔍 Code Reviewer | Commit 訊息、品質檢查 | ~800 |
+
+**預設行為**: 如果使用者沒有載入規則,AI 會根據任務建議需要哪個檔案
+
+---
+
+## 🔍 規則缺失偵測
+
+### 觸發新規則建議的情況
+當發現以下模式重複出現 3 次以上:
+- 新的函式庫或工具
+- 特定的程式碼模式
+- 資料處理邏輯
+- API 整合方式
+
+### 建議格式
+```
+💡 規則建議
+
+我注意到 [模式名稱] 在專案中出現多次。
+建議建立新規則以保持一致性:
+
+建議位置: .cursor/rules/[feature-name].mdc
+建議內容:
+[具體規則草稿]
+
+要我幫你建立這個規則檔案嗎?
+```
+
+---
+
+## ⚡ 快速參考 (最常用)
+
+### 必須遵守的技術要點
+
+**Next.js 15 (重要!)**
 ```typescript
-// Correct Next.js 15 pattern
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  // ... rest of component
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  // ... rest of function
-}
-```
-
-### Server Components
-- Use server components by default
-- Only add "use client" when absolutely necessary
-- Handle async operations properly in server components
-
-## Tailwind CSS v4 Specific Patterns
-
-### Configuration
-- Use CSS-first configuration in `app/globals.css` with `@theme` directive
-- No more `tailwind.config.js` file - all customization in CSS
-- Use `@import "tailwindcss"` instead of `@tailwind` directives
-- PostCSS uses `@tailwindcss/postcss` plugin
-
-### Theme Variables
-```css
-@theme {
-  --color-brand-500: #570df8;
-  --spacing-custom: 2.5rem;
-  --font-display: "Inter", sans-serif;
-}
-```
-
-### Custom Components
-```css
-@utility btn-custom {
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  background-color: var(--color-brand-500);
-}
-```
-
-### Component Patterns
-- Use DaisyUI classes for styling: `btn`, `btn-primary`, `card`, etc.
-- Implement responsive design with Tailwind breakpoints
-- Use proper semantic HTML elements
-- Include proper accessibility attributes
-
-## Supabase Patterns
-
-### Server Client
-```typescript
-import { createClient } from "@/libs/supabase/server";
-
-export default async function Page() {
-  const supabase = await createClient(); // Note: await required in Next.js 15
-  const { data: { user } } = await supabase.auth.getUser();
-  // ...
-}
-```
-
-### Client Component
-```typescript
-"use client";
-import { createClient } from "@/libs/supabase/client";
-
-export default function ClientComponent() {
-  const supabase = createClient(); // No await needed for client
-  // ...
-}
-```
-
-### Authentication Checks
-```typescript
-// Server component
+// ✅ 必須 await
+const headersList = await headers();
+const { id } = await params;
 const supabase = await createClient();
-const { data: { user } } = await supabase.auth.getUser();
-
-if (!user) {
-  redirect("/signin");
-}
 ```
 
-## Environment Variables
-Always use proper environment variable patterns:
-- `NEXT_PUBLIC_SUPABASE_URL` for Supabase URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` for Supabase anon key
-- `SUPABASE_SERVICE_ROLE_KEY` for server-side operations
-- `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` for payments
-- `RESEND_API_KEY` for emails
+**TypeScript**
+- 不用 `any`
+- 函式加 JSDoc
+- 用 Zod 驗證輸入
 
-## Error Handling
-- Use try-catch blocks in API routes
-- Log errors with descriptive messages
-- Return proper HTTP status codes
-- Use toast notifications for user-facing errors
-- Handle loading states in components
-- Handle Supabase auth errors properly
+**錯誤處理**
+```typescript
+// ✅ 使用者友善
+toast.error("操作失敗,請稍後再試");
+console.error("[Feature] Error:", error); // Debug
 
-## Performance
-- Use Next.js Image component for images with `remotePatterns`
-- Implement proper lazy loading
-- Use proper caching strategies
-- Optimize bundle size with proper imports
-- Use server components when possible
+// ❌ 技術錯誤
+toast.error(error.message);
+```
 
-## Security
-- Validate all inputs with Zod or similar
-- Use Supabase RLS for data security
-- Verify webhook signatures (Stripe)
-- Sanitize user data
-- Use proper authentication checks
-- Never expose service role keys on client
+**Supabase 使用**
+- Cloud Dashboard 手動操作 (不用 CLI)
+- RLS 用 SQL Editor 設定
+- 程式碼只做資料查詢整合
 
-## Testing
-- Write unit tests for utility functions
-- Test API routes with proper mocking
-- Test components with React Testing Library
-- Use proper TypeScript types in tests
+**Icon 使用**
+- 只用 `lucide-react`
+- 導航: `w-5 h-5`
+- 按鈕: `w-4 h-4`
 
-## Commit Messages
-Use Conventional Commits format:
-- `feat:` for new features
-- `fix:` for bug fixes
-- `docs:` for documentation
-- `style:` for formatting changes
-- `refactor:` for code refactoring
-- `test:` for adding tests
-- `chore:` for maintenance tasks
+**拖拉功能**
+- 只用 `@dnd-kit`
 
-## Do Not
-- Don't use `any` type unless absolutely necessary
-- Don't bypass TypeScript strict mode
-- Don't forget to handle loading and error states
-- Don't hardcode configuration values
-- Don't forget to validate user inputs
-- Don't skip error handling in async operations
-- Don't use inline styles, prefer TailwindCSS classes
-- Don't create components without proper TypeScript interfaces
-- Don't forget to use `await` with Next.js 15 async APIs
-- Don't skip webhook signature verification for Stripe
-- Don't expose sensitive environment variables on client
-- Don't forget to implement RLS policies in Supabase
+### Commit 類型
+```
+feat: 新功能
+fix: 修復 bug
+refactor: 重構
+docs: 文件
+chore: 維護
+```
 
-## Migration Notes (Next.js 14 → 15)
-- Update `params` in dynamic routes to handle Promises
-- Update `headers()` and `cookies()` calls to use `await`
-- Update Supabase server client calls to use `await createClient()`
-- Update image domains to use `remotePatterns` instead of `domains`
-- Update Tailwind config from JS to CSS-first approach
-- Update DaisyUI to v5+ and handle theme changes 
+### 檔案命名
+- 組件: `PascalCase.tsx`
+- 其他: `kebab-case.ts`
+- Hooks: `use-feature.ts`
+
+---
+
+## 🚨 絕對禁止
+
+1. ❌ 一次實作 >3 個獨立功能
+2. ❌ 修改 >5 個檔案 (非重構場景)
+3. ❌ 重構正常運作的程式碼 (未經要求)
+4. ❌ 使用 `any` 型別
+5. ❌ 給「應該可以」的程式碼 (必須是「已確認可用」)
+6. ❌ 在不同 Tab 定義衝突的資料結構
+7. ❌ 忘記提醒同步 project-state.md
+
+---
+
+## 🎭 Tab 工作流程最佳實踐
+
+### 開始新功能的標準流程
+
+**步驟 1: 規劃 (可選用 Composer)**
+```
+用 Composer 快速規劃:
+- 需要哪些檔案
+- 資料結構定義
+- API 設計
+
+→ 輸出到 project-state.md
+```
+
+**步驟 2: 分 Tab 並行開發**
+```
+Tab 1 🎨: @ui-components.mdc @project-state.md
+建立 UI 組件
+
+Tab 2 ⚙️: @nextjs-patterns.mdc @supabase-patterns.mdc @project-state.md  
+建立 API 和資料庫邏輯
+
+Tab 3 💬: @pm-collaboration.mdc
+隨時諮詢技術問題
+```
+
+**步驟 3: 整合 (用 Composer 或 Full Stack Tab)**
+```
+Tab 4 🔧: @tech-stack.mdc @project-state.md
+整合前後端,測試完整流程
+```
+
+**步驟 4: 檢查 (Code Review Tab)**
+```
+Tab 5 🔍: @commit-conventions.mdc
+檢查程式碼品質,生成 Commit 訊息
+```
+
+### 避免的陷阱
+
+❌ **不要**: 在同一 Tab 混雜 UI + API + 資料庫
+✅ **要做**: 分 Tab,每個 Tab 專注單一職責
+
+❌ **不要**: 多個 Tab 同時修改同一檔案
+✅ **要做**: 一個檔案一次只在一個 Tab 處理
+
+❌ **不要**: 忘記在不同 Tab 間同步資訊
+✅ **要做**: 用 project-state.md 或頻繁 commit
+
+---
+
+## 🎯 AI 主動行為
+
+### 任務開始時
+1. **識別任務類型** → 建議 Tab 和規則
+2. **檢查是否需要同步** → 提醒載入 project-state.md
+3. **確認範圍** → 確保任務明確且可獨立完成
+
+### 任務進行中
+1. **偵測新模式** → 建議建立規則
+2. **發現潛在衝突** → 提醒同步風險
+3. **複雜度超標** → 建議拆分任務
+
+### 任務完成時
+1. **輸出標準格式** → 改動、測試、commit、下一步
+2. **同步提醒** → 是否需要更新 project-state.md
+3. **相關 Tab 提示** → 提醒可能需要更新的其他 Tab
+
+---
+
+## 📖 詳細規範位置
+
+需要更詳細的規範時:
+- **PM 協作**: 查閱 `pm-collaboration.mdc`
+- **技術棧**: 查閱 `tech-stack.mdc`
+- **Next.js**: 查閱 `nextjs-patterns.mdc`
+- **Supabase**: 查閱 `supabase-patterns.mdc`
+- **UI 組件**: 查閱 `ui-components.mdc`
+- **Commit**: 查閱 `commit-conventions.mdc`
+
+---
+
+## 🎓 給 AI 的元指令
+
+**你的身份**: 
+- 智能路由器 + 專業建議者
+- 根據任務推薦最佳 Tab 和規則
+- 主動偵測同步風險
+- 保持回應簡潔聚焦
+
+**記住**:
+- PM 是你的使用者,不是資深工程師
+- 優先穩定性,不追求完美
+- 用類比和非技術語言解釋
+- Supabase 操作說「在哪點哪個按鈕」
+- 保持對話乾淨,避免 context 膨脹

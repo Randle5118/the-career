@@ -1,0 +1,101 @@
+
+---
+globs: "**/*.tsx,**/*.jsx,components/**/*"
+description: Cafka UI/UX 規則 - 視覺設計、互動模式、語言慣例
+---
+
+# Cafka UI/UX 規範
+
+## 語言慣例
+
+### UI 文字: 日文
+- 所有使用者看到的文字使用日文
+- 按鈕、標籤、訊息、錯誤提示等
+
+```tsx
+// ✅ 正確
+<button>応募を追加</button>
+<label>会社名</label>
+
+// ❌ 錯誤
+<button>Add Application</button>
+<label>Company Name</label>
+```
+
+### 程式碼: 英文
+- 註解、變數名、函式名使用英文
+
+```tsx
+// ✅ 正確
+// Fetch applications
+const getApplications = () => {}
+
+// ❌ 錯誤
+// 応募を取得
+const 応募を取得 = () => {}
+```
+
+---
+
+## 視覺風格
+
+### 基調
+- 專業但溫暖 (不要冷冰冰的企業感)
+- 讓使用者感到「有希望」而非「壓力」
+
+### 狀態顏色
+- 🟢 綠色 - 正向 (offer、完成)
+- 🔵 藍色 - 進行中
+- 🟡 黃色 - 警告 (即將到期)
+- 🔴 紅色 - 負面 (被拒絕)
+- ⚪ 灰色 - 無效/已放棄
+
+---
+
+## 互動原則
+
+### 破壞性操作
+- 刪除時需要確認對話框
+- 用日文詢問: 「〇〇を削除しますか?」
+
+### 回饋機制
+- 成功: `toast.success("保存しました")`
+- 失敗: `toast.error("保存に失敗しました")`
+- 載入: 顯示 loading 狀態
+
+### 空狀態
+- 告訴使用者「まだ〇〇がありません」
+- 提供明確的下一步行動按鈕
+
+---
+
+## DaisyUI 使用
+
+### 按鈕
+- 主要: `btn btn-primary`
+- 次要: `btn btn-secondary`
+- 危險: `btn btn-error`
+
+### 表單
+- 使用 `form-control` 結構
+- 錯誤訊息用 `label-text-alt text-error`
+
+### 卡片
+- 使用 `card bg-base-100 shadow-xl`
+
+---
+
+## 響應式設計
+- 手機優先
+- 使用 Tailwind 斷點: `md:` `lg:`
+- 重要操作在手機上易於點擊
+
+---
+
+## 無障礙
+- 按鈕有 `aria-label`
+- 表單有對應 `label`
+- 鍵盤可操作
+```
+
+---

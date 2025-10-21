@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/libs/supabase/server";
+import DashboardNav from "@/components/layout/DashboardNav";
 import config from "@/config";
 
 // This is a server-side component to ensure the user is logged in.
@@ -23,5 +24,13 @@ export default async function LayoutPrivate({
     redirect(config.auth.loginUrl);
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <DashboardNav />
+      {/* Main content area - full width on mobile, with sidebar offset on desktop */}
+      <main className="min-h-screen overflow-y-auto lg:ml-64">
+        {children}
+      </main>
+    </>
+  );
 }

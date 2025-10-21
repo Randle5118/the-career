@@ -18,7 +18,7 @@ const ButtonAccount = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [user, setUser] = useState<User>(null);
 
-	useEffect(() => {
+useEffect(() => {
 		const getUser = async () => {
 			const {
 				data: { user },
@@ -76,7 +76,7 @@ const ButtonAccount = () => {
 
 						{user?.user_metadata?.name ||
 							user?.email?.split("@")[0] ||
-							"Account"}
+							"アカウント"}
 
 						{isLoading ? (
 							<span className="loading loading-spinner loading-xs"></span>
@@ -124,7 +124,7 @@ const ButtonAccount = () => {
 												clipRule="evenodd"
 											/>
 										</svg>
-										Billing
+										Bill
 									</button>
 									<button
 										className="flex items-center gap-2 hover:bg-error/20 hover:text-error duration-200 py-1.5 px-4 w-full rounded-lg font-medium"
@@ -147,7 +147,7 @@ const ButtonAccount = () => {
 												clipRule="evenodd"
 											/>
 										</svg>
-										Logout
+										ログアウト
 									</button>
 								</div>
 							</div>

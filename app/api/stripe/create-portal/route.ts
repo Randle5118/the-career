@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (!data?.customer_id) {
       return NextResponse.json(
         {
-          error: "You don't have a billing account yet. Make a purchase first.",
+          error: "まだお支払いアカウントがありません。まずプランを選択してください。",
         },
         { status: 400 }
       );

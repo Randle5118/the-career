@@ -1,7 +1,7 @@
-# Claude Code Instructions - ShipFast Next.js 15 + Tailwind v4 + Supabase
+# Claude Code Instructions - Cafka Next.js 15 + Tailwind v4 + Supabase
 
 ## Project Context
-You are working on a **ShipFast TypeScript SaaS boilerplate** that has been upgraded to use the latest technologies:
+You are working on a **Cafka TypeScript SaaS boilerplate** that has been upgraded to use the latest technologies:
 - **Next.js 15.4+** with App Router
 - **React 19**
 - **TypeScript 5.9+**

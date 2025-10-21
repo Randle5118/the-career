@@ -43,3 +43,166 @@ description: TypeScript specific coding standards and patterns
 - Handle loading and error states in components
 - Don't skip error handling in async operations
 - Use proper error handling with toast notifications
+
+## Modal Component Standards
+- **Always use Headless UI Dialog + Transition** for all modal components
+- Use consistent modal structure:
+  ```tsx
+  <Transition appear show={isOpen} as={React.Fragment}>
+    <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Transition.Child>
+        <div className="fixed inset-0 bg-black bg-opacity-25" />
+      </Transition.Child>
+      <div className="fixed inset-0 overflow-y-auto">
+        <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <Transition.Child>
+            <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-base-100 p-6 text-left align-middle shadow-xl transition-all">
+              {/* Modal content */}
+            </Dialog.Panel>
+          </Transition.Child>
+        </div>
+      </div>
+    </Dialog>
+  </Transition>
+  ```
+- **Modal Header**: Use `Dialog.Title` with `text-lg font-medium leading-6 text-base-content`
+- **Close Button**: Use `btn btn-sm btn-circle btn-ghost` with X icon from Lucide React
+- **Modal Size**: Default to `max-w-4xl` for complex forms, `max-w-2xl` for simple dialogs
+- **No DaisyUI modals**: Never use DaisyUI's modal system, always use Headless UI
+
+## Dashboard Page Header Standards
+- **Unified Header Structure**:
+  ```tsx
+  <div className="flex w-full flex-wrap items-end justify-between gap-4 border-b border-zinc-950/10 pb-4 dark:border-white/10">
+    <div>
+      <Heading>頁面標題</Heading>
+      <p className="mt-2 text-base/6 text-base-content/50 sm:text-sm/6">
+        頁面描述
+      </p>
+    </div>
+    <button className="btn btn-primary">
+      操作按鈕
+    </button>
+  </div>
+  ```
+- **Title**: Always use `Heading` component from `@/components/catalyst/heading`
+- **Description**: Use consistent text styling `mt-2 text-base/6 text-base-content/50 sm:text-sm/6`
+- **Action Buttons**: Place in header right side with `btn btn-primary` styling
+- **Border**: Use `border-b border-zinc-950/10 pb-4 dark:border-white/10` for separation
+
+## Button Standards
+- **Primary Actions**: Use `btn btn-primary`
+- **Secondary Actions**: Use `btn btn-ghost`
+- **Small Buttons**: Use `btn btn-sm` for compact spaces
+- **Icon Buttons**: Use `btn btn-sm btn-circle btn-ghost` with Lucide React icons
+- **Loading States**: Include loading spinner with `loading loading-spinner loading-xs`
+- **Consistent Sizing**: Use `w-4 h-4` for small icons, `w-5 h-5` for standard icons
+
+## Form Component Standards
+- **Use Catalyst Design System**: All form components should use Catalyst components
+- **FormField**: Use `FormField` component with proper validation states
+- **Form Layout**: Use `space-y-4` for form field spacing, `space-y-6` for form sections
+- **Error Handling**: Display errors with `ErrorMessage` component
+- **Required Fields**: Mark with `*` and red color `text-error`
+- **Help Text**: Use `Description` component for field help text
+
+## Color and Spacing Standards
+- **Primary Colors**: Use DaisyUI theme colors (`primary`, `secondary`, `accent`, etc.)
+- **Text Colors**: Use semantic colors (`text-base-content`, `text-base-content/50`, etc.)
+- **Borders**: Use `border-base-300` for subtle borders, `border-zinc-950/10` for page separators
+- **Spacing**: Use Tailwind spacing scale (4, 6, 8, etc.) consistently
+- **Background**: Use `bg-base-100` for main backgrounds, `bg-white` for cards
+
+## Form Handling Standards (Based on My-Career Pattern)
+- **Form State Management**:
+  ```tsx
+  const [formData, setFormData] = useState<FormDataType>({
+    // Initial form state
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  ```
+- **Form Change Handlers**:
+  ```tsx
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  ```
+- **Form Submit Pattern**:
+  ```tsx
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Validation logic
+      if (itemId) {
+        // Update existing item
+        await updateItem(itemId, formData);
+        toast.success("更新しました");
+      } else {
+        // Create new item
+        const newItem = {
+          id: `item-${baseId}-${items.length}`,
+          ...formData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setItems(prev => [...prev, newItem]);
+        toast.success("追加しました");
+      }
+      handleClose();
+    } catch (error) {
+      console.error("保存エラー:", error);
+      toast.error("保存に失敗しました");
+    }
+  };
+  ```
+
+## Complex Form Layout Standards
+- **Form Sections**: Wrap each section in `bg-base-100 border border-base-300 rounded-lg p-6`
+- **Section Headers**: Use `text-lg font-semibold text-base-content mb-6`
+- **Form Spacing**: Use `space-y-6` for form sections, `space-y-4` for form fields
+- **Grid Layouts**: Use `grid grid-cols-1 md:grid-cols-2 gap-6` for responsive form fields
+- **Collapsible Sections**: Use toggle buttons with `btn btn-sm btn-outline` for show/hide functionality
+
+## Modal Integration Pattern
+- **Modal State Management**:
+  ```tsx
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ItemType | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  ```
+- **Modal Handlers**:
+  ```tsx
+  const handleAddNew = () => {
+    setEditingItem(null);
+    setEditingItemId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item: ItemType) => {
+    setEditingItem(item);
+    setEditingItemId(item.id);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingItem(null);
+    setEditingItemId(null);
+  };
+  ```
+- **Toast Notifications**: Always use `react-hot-toast` for success/error messages
+- **Error Handling**: Use try-catch blocks with proper error logging and user feedback
+
+## Data Transformation Standards
+- **Tags Handling**: Convert between string and array formats:
+  ```tsx
+  // String to Array
+  tags: typeof data.tags === 'string' ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : data.tags || []
+  
+  // Array to String (for form display)
+  tags: item.tags?.join(", ") || ""
+  ```
+- **Date Handling**: Use ISO string format for storage, local format for display
+- **ID Generation**: Use `useId()` hook for generating unique IDs in client components
