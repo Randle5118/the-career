@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect, useId } from "react";
-import { useRouter } from "next/navigation";
 import type { Career, CareerFormData, OfferSalary, SalaryChange } from "@/types/career";
 import CareerCard from "@/components/cards/CareerCard";
 import CareerModal from "@/components/modals/CareerModal";
 import { toast } from "react-hot-toast";
 import { Briefcase } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, ReferenceLine } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ReferenceLine } from "recharts";
 import { formatSalaryCompact } from "@/libs/currency";
 import { getMockCareers } from "@/libs/mock-data";
-import { Heading, Subheading } from "@/components/catalyst/heading";
+import { Heading } from "@/components/catalyst/heading";
 
 // 使用統一的 mock 數據
 const mockCareers = getMockCareers();
@@ -66,7 +65,6 @@ const checkTimelineIssues = (careers: Career[]) => {
 };
 
 export default function MyCareerPage() {
-  const router = useRouter();
   const [careers, setCareers] = useState<Career[]>(mockCareers);
   const [mounted, setMounted] = useState(false);
   const baseId = useId();
@@ -75,6 +73,9 @@ export default function MyCareerPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCareer, setEditingCareer] = useState<Career | null>(null);
   const [editingCareerId, setEditingCareerId] = useState<string | null>(null);
+  
+  // Chart selection state
+  const [selectedChart, setSelectedChart] = useState<'companies' | 'years' | 'growth'>('growth');
 
   // Ensure chart only renders on client-side
   useEffect(() => {
@@ -90,27 +91,6 @@ export default function MyCareerPage() {
   const fullTimeCareers = useMemo(() => {
     return careers.filter(career => career.employmentType === "full_time");
   }, [careers]);
-
-  // Statistics (only for full-time careers)
-  const stats = useMemo(() => {
-    const total = fullTimeCareers.length;
-    const current = fullTimeCareers.filter((c) => c.status === "current").length;
-    
-    // Use a fixed date to avoid hydration mismatch
-    const currentDate = new Date("2024-12-01");
-    
-    const totalYears = fullTimeCareers.reduce((acc, career) => {
-      const start = new Date(career.startDate + "-01"); // Add day to make valid date
-      const end = career.endDate ? new Date(career.endDate + "-01") : currentDate;
-      const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-      return acc + months / 12;
-    }, 0);
-    const salaryChanges = fullTimeCareers.reduce((acc, career) => {
-      return acc + (career.salaryHistory?.length || 0);
-    }, 0);
-
-    return { total, current, totalYears: Math.round(totalYears * 10) / 10, salaryChanges };
-  }, [fullTimeCareers]);
 
   // Salary trend data for simplified chart
   const salaryTrendData = useMemo(() => {
@@ -149,6 +129,42 @@ export default function MyCareerPage() {
     return allChanges;
   }, [fullTimeCareers]);
 
+  // Statistics (only for full-time careers)
+  const stats = useMemo(() => {
+    const total = fullTimeCareers.length;
+    const current = fullTimeCareers.filter((c) => c.status === "current").length;
+    
+    // Use a fixed date to avoid hydration mismatch
+    const currentDate = new Date("2024-12-01");
+    
+    const totalYears = fullTimeCareers.reduce((acc, career) => {
+      const start = new Date(career.startDate + "-01"); // Add day to make valid date
+      const end = career.endDate ? new Date(career.endDate + "-01") : currentDate;
+      const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+      return acc + months / 12;
+    }, 0);
+    
+    // Calculate salary growth percentage
+    let salaryGrowth = 0;
+    if (salaryTrendData.length >= 2) {
+      const firstSalary = salaryTrendData[0].totalSalary;
+      const lastSalary = salaryTrendData[salaryTrendData.length - 1].totalSalary;
+      salaryGrowth = Math.round(((lastSalary - firstSalary) / firstSalary) * 100);
+    }
+
+    // Calculate unique job types count
+    const uniquePositions = new Set(fullTimeCareers.map(career => career.position));
+    const jobTypeCount = uniquePositions.size;
+
+    return { 
+      total, 
+      current, 
+      totalYears: Math.round(totalYears * 10) / 10, 
+      salaryGrowth,
+      jobTypeCount 
+    };
+  }, [fullTimeCareers, salaryTrendData]);
+
   // Calculate smart Y-axis range
   const yAxisDomain = useMemo(() => {
     if (salaryTrendData.length === 0) return [0, 1000];
@@ -170,6 +186,105 @@ export default function MyCareerPage() {
     
     return [minInMan, maxInMan];
   }, [salaryTrendData]);
+
+  // Chart data based on selection
+  const chartConfig = useMemo(() => {
+    const currentDate = new Date("2024-12-01");
+    
+    switch (selectedChart) {
+      case 'companies':
+        return {
+          title: '職種別経験年数',
+          description: '各職種での総経験年数を表示',
+          type: 'bar' as const,
+          data: (() => {
+            // 統計各職種的工作時間
+            const positionMap = new Map<string, number>();
+            
+            fullTimeCareers.forEach(career => {
+              const start = new Date(career.startDate + "-01");
+              const end = career.endDate ? new Date(career.endDate + "-01") : currentDate;
+              const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+              
+              const position = career.position;
+              const currentMonths = positionMap.get(position) || 0;
+              positionMap.set(position, currentMonths + months);
+            });
+            
+            // 截斷過長的職種名稱
+            const truncateName = (name: string, maxLength: number = 10) => {
+              return name.length > maxLength ? name.slice(0, maxLength) + '...' : name;
+            };
+            
+            return Array.from(positionMap.entries())
+              .filter(([_, months]) => months > 0) // 過濾掉 0 或負數
+              .map(([position, months]) => ({
+                position,
+                displayName: truncateName(position),
+                months,
+                years: Math.round(months / 12 * 10) / 10,
+              }))
+              .sort((a, b) => b.months - a.months); // 依時間長度排序
+          })(),
+          dataKey: 'months',
+          xAxisKey: 'displayName',
+          yAxisFormatter: (value: number) => `${Math.round(value / 12 * 10) / 10}年`,
+          tooltipFormatter: (value: number) => `${Math.round(value / 12 * 10) / 10}年 (${value}ヶ月)`,
+        };
+      
+      case 'years':
+        return {
+          title: '勤務先の分布',
+          description: '各企業での在籍期間を表示',
+          type: 'bar' as const,
+          data: fullTimeCareers.map(career => {
+            const start = new Date(career.startDate + "-01");
+            const end = career.endDate ? new Date(career.endDate + "-01") : currentDate;
+            const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+            
+            // 截斷過長的公司名稱
+            const truncateName = (name: string, maxLength: number = 8) => {
+              return name.length > maxLength ? name.slice(0, maxLength) + '...' : name;
+            };
+            
+            return {
+              name: career.companyName,
+              displayName: truncateName(career.companyName),
+              months: months,
+              years: Math.round(months / 12 * 10) / 10,
+            };
+          }),
+          dataKey: 'months',
+          xAxisKey: 'displayName',
+          yAxisFormatter: (value: number) => `${Math.round(value / 12 * 10) / 10}年`,
+          tooltipFormatter: (value: number) => `${Math.round(value / 12 * 10) / 10}年 (${value}ヶ月)`,
+        };
+      
+      case 'growth':
+        return {
+          title: '給与推移',
+          description: '時系列での給与の変化を表示',
+          type: 'line' as const,
+          data: salaryTrendData,
+          dataKey: 'totalSalary',
+          xAxisKey: 'date',
+          yAxisFormatter: (value: number) => formatSalaryCompact(value, 'JPY'),
+          tooltipFormatter: (value: number) => formatSalaryCompact(value, 'JPY'),
+        };
+      
+      default:
+        return {
+          title: '給与推移',
+          description: '',
+          type: 'line' as const,
+          data: salaryTrendData,
+          dataKey: 'totalSalary',
+          xAxisKey: 'date',
+          yAxisFormatter: (value: number) => formatSalaryCompact(value, 'JPY'),
+          tooltipFormatter: (value: number) => formatSalaryCompact(value, 'JPY'),
+        };
+    }
+  }, [selectedChart, salaryTrendData, fullTimeCareers]);
 
   // Sort careers by date (current jobs first, then by start date descending)
   const sortedCareers = useMemo(() => {
@@ -273,110 +388,188 @@ export default function MyCareerPage() {
       <div className="flex flex-col lg:flex-row gap-6 mb-4 lg:items-stretch">
         {/* Statistics */}
         <div className="flex flex-col lg:w-3/10 gap-4">
-          {/* Total Companies */}
-          <div className="bg-base-100 border border-base-300 rounded-lg p-6 hover:border-primary/40 transition-all hover:shadow-sm flex-1 flex items-center justify-between">
-            <div className="text-sm text-base-content/60">総勤務先数</div>
-            <div className="text-3xl font-semibold">{stats.total}</div>
-          </div>
-
-          {/* Current Jobs */}
-          <div className="bg-base-100 border border-base-300 rounded-lg p-6 hover:border-primary/40 transition-all hover:shadow-sm flex-1 flex items-center justify-between">
-            <div className="text-sm text-base-content/60">現職</div>
-            <div className="text-3xl font-semibold">{stats.current}</div>
-          </div>
+          {/* Salary Growth - First */}
+          <button 
+            onClick={() => setSelectedChart('growth')}
+            className={`bg-base-100 border rounded-lg p-6 transition-all flex-1 flex items-center justify-between text-left ${
+              selectedChart === 'growth' 
+                ? 'border-primary shadow-md ring-2 ring-primary/20' 
+                : 'border-base-300 hover:border-primary/40 hover:shadow-sm'
+            }`}
+          >
+            <div className="text-sm text-base-content/60">給与変化比率</div>
+            <div className={`text-3xl font-semibold ${stats.salaryGrowth >= 0 ? 'text-success' : 'text-error'}`}>
+              {stats.salaryGrowth >= 0 ? '+' : ''}{stats.salaryGrowth}%
+            </div>
+          </button>
 
           {/* Total Years */}
-          <div className="bg-base-100 border border-base-300 rounded-lg p-6 hover:border-primary/40 transition-all hover:shadow-sm flex-1 flex items-center justify-between">
+          <button 
+            onClick={() => setSelectedChart('years')}
+            className={`bg-base-100 border rounded-lg p-6 transition-all flex-1 flex items-center justify-between text-left ${
+              selectedChart === 'years' 
+                ? 'border-primary shadow-md ring-2 ring-primary/20' 
+                : 'border-base-300 hover:border-primary/40 hover:shadow-sm'
+            }`}
+          >
             <div className="text-sm text-base-content/60">総勤務年数</div>
-            <div className="text-3xl font-semibold">{stats.totalYears}年</div>
-          </div>
+            <div className="text-3xl font-semibold">{stats.totalYears}<span className="text-base-content/60 text-sm">年</span></div>
+          </button>
 
-          {/* Salary Changes */}
-          <div className="bg-base-100 border border-base-300 rounded-lg p-6 hover:border-primary/40 transition-all hover:shadow-sm flex-1 flex items-center justify-between">
-            <div className="text-sm text-base-content/60">給与変化</div>
-            <div className="text-3xl font-semibold">{stats.salaryChanges}回</div>
-          </div>
+          {/* Job Types */}
+          <button 
+            onClick={() => setSelectedChart('companies')}
+            className={`bg-base-100 border rounded-lg p-6 transition-all flex-1 flex items-center justify-between text-left ${
+              selectedChart === 'companies' 
+                ? 'border-primary shadow-md ring-2 ring-primary/20' 
+                : 'border-base-300 hover:border-primary/40 hover:shadow-sm'
+            }`}
+          >
+            <div className="text-sm text-base-content/60">キャリア歴</div>
+            <div className="text-3xl font-semibold">{stats.jobTypeCount}<span className="text-base-content/60 text-sm pl-1">種</span></div>
+          </button>
         </div>
 
-        {/* Salary Trend Chart */}
-        {mounted && salaryTrendData.length > 0 && (
-              <div className="bg-base-100 border border-base-300 rounded-lg p-6 hover:border-primary/40 transition-all hover:shadow-sm lg:w-7/10 flex flex-col">
+        {/* Dynamic Chart */}
+        {mounted && (
+          <div className="bg-base-100 border border-base-300 rounded-lg p-6 hover:border-primary/40 transition-all hover:shadow-sm lg:w-7/10 flex flex-col">
             <div className="mb-4">
-              <h3 className="text-lg font-bold text-base-content">給与推移</h3>
+              <h3 className="text-lg font-bold text-base-content">{chartConfig.title}</h3>
+              {chartConfig.description && (
+                <p className="text-sm text-base-content/60 mt-1">{chartConfig.description}</p>
+              )}
             </div>
             <div className="flex-1 flex items-center justify-center">
               <div className="w-full bg-white rounded-lg p-3 border border-base-200" style={{ height: 250 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={salaryTrendData}
-                  margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid 
-                    strokeDasharray="2 4" 
-                    stroke="oklch(var(--bc) / 0.12)" 
-                    strokeWidth={1}
-                    vertical={false}
-                    horizontal={true}
-                  />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fill: 'oklch(var(--bc) / 0.7)', fontSize: 12, fontWeight: 500 }}
-                    axisLine={{ stroke: 'oklch(var(--bc) / 0.25)', strokeWidth: 1 }}
-                    tickMargin={15}
-                    height={30}
-                  />
-                  <YAxis 
-                    tick={{ fill: 'oklch(var(--bc) / 0.7)', fontSize: 12, fontWeight: 500 }}
-                    stroke="oklch(var(--bc) / 0.25)"
-                    tickFormatter={(value) => formatSalaryCompact(value, 'JPY')}
-                    tickMargin={15}
-                    width={60}
-                    domain={yAxisDomain}
-                  />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-                            <div className="font-bold text-primary text-lg mb-1">
-                              {formatSalaryCompact(payload[0].value, 'JPY')}
-                            </div>
-                            <div className="text-sm text-base-content/60 mb-1">
-                              {data.date}
-                            </div>
-                            {data.company && (
-                              <div className="text-sm text-base-content/80 mb-1 font-medium">
-                                {data.company}
+                <ResponsiveContainer width="100%" height="100%">
+                  {chartConfig.type === 'line' ? (
+                    <LineChart
+                      data={chartConfig.data}
+                      margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid 
+                        strokeDasharray="2 4" 
+                        stroke="oklch(var(--bc) / 0.12)" 
+                        strokeWidth={1}
+                        vertical={false}
+                        horizontal={true}
+                      />
+                      <XAxis 
+                        dataKey={chartConfig.xAxisKey}
+                        tick={{ fill: 'oklch(var(--bc) / 0.7)', fontSize: 12, fontWeight: 500 }}
+                        axisLine={{ stroke: 'oklch(var(--bc) / 0.25)', strokeWidth: 1 }}
+                        tickMargin={15}
+                        height={30}
+                      />
+                      <YAxis 
+                        tick={{ fill: 'oklch(var(--bc) / 0.7)', fontSize: 12, fontWeight: 500 }}
+                        stroke="oklch(var(--bc) / 0.25)"
+                        tickFormatter={chartConfig.yAxisFormatter}
+                        tickMargin={15}
+                        width={60}
+                        domain={selectedChart === 'growth' ? yAxisDomain : undefined}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
+                                <div className="font-bold text-primary text-lg mb-1">
+                                  {chartConfig.tooltipFormatter(payload[0].value as number)}
+                                </div>
+                                <div className="text-sm text-base-content/60 mb-1">
+                                  {data[chartConfig.xAxisKey]}
+                                </div>
+                                {data.company && (
+                                  <div className="text-sm text-base-content/80 mb-1 font-medium">
+                                    {data.company}
+                                  </div>
+                                )}
+                                {data.position && (
+                                  <div className="text-xs text-base-content/70">
+                                    {data.position}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            {data.position && (
-                              <div className="text-xs text-base-content/70">
-                                {data.position}
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey={chartConfig.dataKey}
+                        stroke="#5b8ff9"
+                        strokeWidth={3}
+                        dot={{ fill: '#5b8ff9', strokeWidth: 2, r: 5 }}
+                        activeDot={{ 
+                          r: 7, 
+                          stroke: '#5b8ff9',
+                          strokeWidth: 2, 
+                          fill: '#fff'
+                        }}
+                      />
+                    </LineChart>
+                  ) : (
+                    <BarChart
+                      data={chartConfig.data}
+                      margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid 
+                        strokeDasharray="2 4" 
+                        stroke="oklch(var(--bc) / 0.12)" 
+                        strokeWidth={1}
+                        vertical={false}
+                        horizontal={true}
+                      />
+                      <XAxis 
+                        dataKey={chartConfig.xAxisKey}
+                        tick={{ fill: 'oklch(var(--bc) / 0.7)', fontSize: 12, fontWeight: 500 }}
+                        axisLine={{ stroke: 'oklch(var(--bc) / 0.25)', strokeWidth: 1 }}
+                        tickMargin={15}
+                        height={30}
+                        interval={0}
+                      />
+                      <YAxis 
+                        tick={{ fill: 'oklch(var(--bc) / 0.7)', fontSize: 12, fontWeight: 500 }}
+                        stroke="oklch(var(--bc) / 0.25)"
+                        tickFormatter={chartConfig.yAxisFormatter}
+                        tickMargin={15}
+                        width={60}
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
+                                <div className="font-bold text-primary text-lg mb-1">
+                                  {chartConfig.tooltipFormatter(payload[0].value as number)}
+                                </div>
+                                <div className="text-sm text-base-content/60 mb-1">
+                                  {/* 顯示完整名稱,如果有的話 */}
+                                  {data.name || data.position || data[chartConfig.xAxisKey]}
+                                </div>
+                                {data.companies && Array.isArray(data.companies) && (
+                                  <div className="text-xs text-base-content/70 mt-1">
+                                    {data.companies.join(', ')}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="totalSalary" 
-                    stroke="#5b8ff9" 
-                    strokeWidth={3}
-                    dot={{ fill: '#5b8ff9', strokeWidth: 2, r: 5 }}
-                    activeDot={{ 
-                      r: 7, 
-                      stroke: '#5b8ff9', 
-                      strokeWidth: 2, 
-                      fill: '#fff'
-                    }}
-                    name="給与総額"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar 
+                        dataKey={chartConfig.dataKey}
+                        fill="#5b8ff9"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

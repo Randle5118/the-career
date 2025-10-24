@@ -37,7 +37,7 @@ export default function ScheduleSection({ application }: ScheduleSectionProps) {
     <div className="space-y-8">
       {/* 次回イベント */}
       {schedule.nextEvent && (
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h4 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             次回イベント
           </h4>
@@ -76,7 +76,7 @@ export default function ScheduleSection({ application }: ScheduleSectionProps) {
 
       {/* 面接方法 */}
       {schedule.interviewMethod && (
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h4 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             面接方法
           </h4>
@@ -116,7 +116,7 @@ export default function ScheduleSection({ application }: ScheduleSectionProps) {
 
       {/* 期日のみの場合 */}
       {!schedule.nextEvent && schedule.deadline && (
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h4 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             期日
           </h4>

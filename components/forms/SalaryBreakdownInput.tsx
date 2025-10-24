@@ -93,7 +93,7 @@ export const SalaryBreakdownInput: React.FC<SalaryBreakdownInputProps> = ({
 
       {/* Total */}
       {salaryBreakdown.length > 0 && (
-        <div className="p-3 bg-base-200 rounded-lg">
+        <div className="p-1 bg-base-200 rounded-lg">
           <div className="flex justify-between items-center">
             <span className="font-medium">合計:</span>
             <span className="font-bold text-lg">

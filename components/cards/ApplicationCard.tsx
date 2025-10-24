@@ -8,19 +8,10 @@ import { MapPin, Briefcase, Link2, Calendar, User, Banknote, Video, Building2, E
 const formatSalary = (salary: SalaryDetails | undefined): string | null => {
   if (!salary) return null;
   
-  if (salary.type === "annual") {
-    if (salary.minAnnualSalary && salary.maxAnnualSalary) {
-      return `年収 ${salary.minAnnualSalary}万円〜${salary.maxAnnualSalary}万円`;
-    } else if (salary.minAnnualSalary) {
-      return `年収 ${salary.minAnnualSalary}万円〜`;
-    }
-  } else if (salary.type === "monthly_with_bonus") {
-    if (salary.minMonthlySalary && salary.maxMonthlySalary) {
-      const bonusText = salary.bonusMonths 
-        ? ` + 賞与${salary.bonusMonths}ヶ月`
-        : "";
-      return `月給 ${salary.minMonthlySalary}万円〜${salary.maxMonthlySalary}万円${bonusText}`;
-    }
+  if (salary.minAnnualSalary && salary.maxAnnualSalary) {
+    return `年収 ${salary.minAnnualSalary}万円〜${salary.maxAnnualSalary}万円`;
+  } else if (salary.minAnnualSalary) {
+    return `年収 ${salary.minAnnualSalary}万円〜`;
   }
   
   return null;

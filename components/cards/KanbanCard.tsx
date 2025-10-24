@@ -10,16 +10,10 @@ import { GripVertical, Banknote, Calendar, Link2, User, Video, Building2, Extern
 const formatSalaryCompact = (salary: SalaryDetails | undefined): string | null => {
   if (!salary) return null;
   
-  if (salary.type === "annual") {
-    if (salary.minAnnualSalary && salary.maxAnnualSalary) {
-      return `¥${salary.minAnnualSalary}〜${salary.maxAnnualSalary}万`;
-    } else if (salary.minAnnualSalary) {
-      return `¥${salary.minAnnualSalary}万〜`;
-    }
-  } else if (salary.type === "monthly_with_bonus") {
-    if (salary.minMonthlySalary && salary.maxMonthlySalary) {
-      return `月¥${salary.minMonthlySalary}〜${salary.maxMonthlySalary}万`;
-    }
+  if (salary.minAnnualSalary && salary.maxAnnualSalary) {
+    return `¥${salary.minAnnualSalary}〜${salary.maxAnnualSalary}万`;
+  } else if (salary.minAnnualSalary) {
+    return `¥${salary.minAnnualSalary}万〜`;
   }
   
   return null;
@@ -131,15 +125,15 @@ export default function KanbanCard({
         isDragging ? "shadow-xl" : "shadow-sm"
       }`}
     >
-      {/* 頭部：Drag Handle + 操作 icons */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-base-200">
-        {/* Drag Handle */}
-        <div 
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing"
-        >
-          <GripVertical className="w-4 h-4 text-base-content/40 shrink-0" />
+      {/* 頭部：Drag Handle + 操作 icons - 整個區域可拖拉 */}
+      <div 
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-between gap-2 px-4 py-2 border-b border-base-200 cursor-grab active:cursor-grabbing"
+      >
+        {/* Drag Handle Icon */}
+        <div className="shrink-0">
+          <GripVertical className="w-4 h-4 text-base-content/40" />
         </div>
         
         {/* Action Icons */}
@@ -149,6 +143,7 @@ export default function KanbanCard({
               e.stopPropagation();
               onEdit(application);
             }}
+            onPointerDown={(e) => e.stopPropagation()}
             className="p-1.5 text-base-content/40 hover:text-primary hover:bg-base-200 rounded transition-colors"
             title="編集"
           >
@@ -159,6 +154,7 @@ export default function KanbanCard({
               e.stopPropagation();
               // Delete action
             }}
+            onPointerDown={(e) => e.stopPropagation()}
             className="p-1.5 text-base-content/40 hover:text-error hover:bg-base-200 rounded transition-colors"
             title="削除"
           >
@@ -175,6 +171,63 @@ export default function KanbanCard({
           onViewDetail?.(application);
         }}
       >
+        {/* Schedule / Next Action - 移到最上面 */}
+        {application.schedule?.nextEvent && (
+          <div className="mb-3 p-2.5 bg-warning/10 border border-warning/20 rounded text-xs">
+            <div className="space-y-2">
+              {/* 活動名稱 */}
+              <div className="font-medium truncate text-center text-base-content/80">
+                {application.schedule.nextEvent}
+              </div>
+              
+              {/* 日期時間 */}
+              {application.schedule.deadline && (
+                <div className="flex items-center justify-center gap-1.5 text-base-content/60">
+                  <Calendar className="w-3.5 h-3.5 text-warning" />
+                  <span>
+                    {mounted ? new Date(application.schedule.deadline).toLocaleString("ja-JP", {
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }) : "..."}
+                  </span>
+                </div>
+              )}
+              
+              {/* 面試方式 */}
+              {application.schedule.interviewMethod && (
+                <div className="flex items-center justify-center gap-1.5">
+                  {application.schedule.interviewMethod.type === "online" ? (
+                    <>
+                      <Video className="w-3.5 h-3.5 text-warning" />
+                      <span className="text-base-content/70">オンライン</span>
+                      {application.schedule.interviewMethod.url && (
+                        <a
+                          href={application.schedule.interviewMethod.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline ml-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Building2 className="w-3.5 h-3.5 text-warning" />
+                      <span className="text-base-content/70 truncate">
+                        対面: {application.schedule.interviewMethod.address}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 公司名 */}
         <div className="flex items-center justify-center gap-1.5 mb-2">
           <h3 className="font-semibold text-base truncate">{application.companyName}</h3>
@@ -212,44 +265,37 @@ export default function KanbanCard({
         </div>
 
         {/* 給与情報 */}
-        {(application.offerSalary || application.desiredSalary || application.postedSalary) && (
-          <div className="flex items-center justify-center gap-1.5 text-xs text-base-content/70 mb-1">
-            <Banknote className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">
-              {application.offerSalary ? (
-                <span className="text-success font-medium">
-                  希望: {application.desiredSalary}万
-                </span>
-              ) : application.desiredSalary ? (
-                `希望: ${application.desiredSalary}万`
-              ) : (
-                formatSalaryCompact(application.postedSalary)
-              )}
-            </span>
-          </div>
-        )}
-
-        {/* Schedule / Next Action */}
-        {application.schedule?.nextEvent && (
-          <div className="mt-3 p-2.5 bg-warning/10 border border-warning/20 rounded text-xs">
-            <div className="flex items-start gap-1.5 text-base-content/80">
-              <Calendar className="w-3.5 h-3.5 shrink-0 mt-0.5 text-warning" />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate text-center">{application.schedule.nextEvent}</div>
-                {application.schedule.deadline && (
-                  <div className="text-base-content/60 mt-1 text-center">
-                    {mounted ? new Date(application.schedule.deadline).toLocaleString("ja-JP", {
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }) : "..."}
-                  </div>
-                )}
-              </div>
+        <div className="space-y-1">
+          {/* 掲載年収 */}
+          {application.postedSalary && (application.postedSalary.minAnnualSalary || application.postedSalary.maxAnnualSalary) && (
+            <div className="flex items-center justify-center gap-1.5 text-xs text-base-content/60">
+              <Banknote className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                掲載: {formatSalaryCompact(application.postedSalary)}
+              </span>
             </div>
-          </div>
-        )}
+          )}
+          
+          {/* 希望年収 */}
+          {application.desiredSalary && (
+            <div className="flex items-center justify-center gap-1.5 text-xs text-base-content/70">
+              <Banknote className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate font-medium">
+                希望: {application.desiredSalary}万
+              </span>
+            </div>
+          )}
+          
+          {/* オファー年収 */}
+          {application.offerSalary?.salaryBreakdown && (
+            <div className="flex items-center justify-center gap-1.5 text-xs">
+              <Banknote className="w-3.5 h-3.5 shrink-0 text-success" />
+              <span className="truncate font-medium text-success">
+                オファー: {application.offerSalary.salaryBreakdown.reduce((sum, item) => sum + item.salary, 0)}万
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* 詳細を見るボタン */}
         <button

@@ -86,26 +86,26 @@ export default function BasicInfoSection({
     }
   };
 
-  // 給与顯示
-  const getSalaryDisplay = () => {
-    const parts = [];
-    if (application.postedSalary) {
-      const posted = application.postedSalary.type === "annual"
-        ? `年収 ${application.postedSalary.minAnnualSalary || 0}〜${application.postedSalary.maxAnnualSalary || 0}万円`
-        : `月給 ${application.postedSalary.minMonthlySalary || 0}〜${application.postedSalary.maxMonthlySalary || 0}万円`;
-      parts.push(posted);
-    }
-    if (application.desiredSalary) {
-      parts.push(`希望: ${application.desiredSalary}万円`);
-    }
-    if (application.offerSalary) {
-      const offer = application.offerSalary.salaryBreakdown?.reduce(
-        (sum, item) => sum + item.salary,
-        0
-      );
-      parts.push(`オファー: ${offer}万円`);
-    }
-    return parts.join(" / ");
+  // 格式化掲載年収
+  const getPostedSalaryDisplay = () => {
+    if (!application.postedSalary) return null;
+    return `年収 ${application.postedSalary.minAnnualSalary || 0}〜${application.postedSalary.maxAnnualSalary || 0}万円`;
+  };
+
+  // 格式化希望年収
+  const getDesiredSalaryDisplay = () => {
+    if (!application.desiredSalary) return null;
+    return `${application.desiredSalary}万円`;
+  };
+
+  // 格式化オファー年収
+  const getOfferSalaryDisplay = () => {
+    if (!application.offerSalary?.salaryBreakdown) return null;
+    const total = application.offerSalary.salaryBreakdown.reduce(
+      (sum, item) => sum + item.salary,
+      0
+    );
+    return `${total}万円`;
   };
 
   return (
@@ -206,15 +206,47 @@ export default function BasicInfoSection({
         </div>
       </div>
 
-      {/* 給与情報 */}
-      {(application.postedSalary || application.desiredSalary || application.offerSalary) && (
+      {/* 掲載年収 */}
+      {application.postedSalary && (
         <div className="flex items-center justify-between py-4">
           <div className="flex items-center space-x-2 w-32 shrink-0">
             <Banknote className="w-4 h-4" />
-            <div className="text-sm">給与</div>
+            <div className="text-sm">掲載年収</div>
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium text-base-content/90 truncate block">{getSalaryDisplay()}</span>
+            <span className="text-sm font-medium text-base-content/90 truncate block">{getPostedSalaryDisplay()}</span>
+            {application.postedSalary.notes && (
+              <p className="text-xs text-base-content/60 mt-1">{application.postedSalary.notes}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 希望年収 */}
+      {application.desiredSalary && (
+        <div className="flex items-center justify-between py-4">
+          <div className="flex items-center space-x-2 w-32 shrink-0">
+            <Banknote className="w-4 h-4" />
+            <div className="text-sm">希望年収</div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium text-base-content/90 truncate block">{getDesiredSalaryDisplay()}</span>
+          </div>
+        </div>
+      )}
+
+      {/* オファー年収 */}
+      {application.offerSalary && (
+        <div className="flex items-center justify-between py-4">
+          <div className="flex items-center space-x-2 w-32 shrink-0">
+            <Banknote className="w-4 h-4" />
+            <div className="text-sm">オファー年収</div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium text-success truncate block">{getOfferSalaryDisplay()}</span>
+            {application.offerSalary.notes && (
+              <p className="text-xs text-base-content/60 mt-1">{application.offerSalary.notes}</p>
+            )}
           </div>
         </div>
       )}

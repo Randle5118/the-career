@@ -217,9 +217,9 @@ export default function ApplicationModal({
       onClose={handleClose} 
       title={application ? "応募情報を編集" : "新しい応募を追加"}
     >
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* 基本情報 */}
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             基本情報
           </h3>
@@ -278,7 +278,7 @@ export default function ApplicationModal({
         </section>
 
         {/* 應募方法 */}
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             応募方法
           </h3>
@@ -288,8 +288,76 @@ export default function ApplicationModal({
           />
         </section>
 
+        {/* 給与情報 */}
+        <section className="bg-base-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
+            給与情報
+          </h3>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                label="掲載給与(下限)"
+                name="postedSalaryMin"
+                type="number"
+                value={formData.postedSalary?.minAnnualSalary?.toString() || ""}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  postedSalary: {
+                    ...prev.postedSalary,
+                    minAnnualSalary: e.target.value ? Number(e.target.value) : undefined
+                  }
+                }))}
+                placeholder="例: 600"
+                helpText="万円"
+              />
+
+              <FormField
+                label="掲載給与(上限)"
+                name="postedSalaryMax"
+                type="number"
+                value={formData.postedSalary?.maxAnnualSalary?.toString() || ""}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  postedSalary: {
+                    ...prev.postedSalary,
+                    maxAnnualSalary: e.target.value ? Number(e.target.value) : undefined
+                  }
+                }))}
+                placeholder="例: 800"
+                helpText="万円"
+              />
+            </div>
+
+            <FormTextarea
+              label="給与備考"
+              name="postedSalaryNotes"
+              value={formData.postedSalary?.notes || ""}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                postedSalary: {
+                  ...prev.postedSalary,
+                  notes: e.target.value
+                }
+              }))}
+              placeholder="例: 経験・スキルに応じて優遇"
+              rows={2}
+            />
+
+            <FormField
+              label="希望年収"
+              name="desiredSalary"
+              type="number"
+              value={formData.desiredSalary || ""}
+              onChange={handleChange}
+              placeholder="例: 750"
+              helpText="万円"
+            />
+          </div>
+        </section>
+
         {/* 日程管理 */}
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             日程管理
           </h3>
@@ -325,7 +393,7 @@ export default function ApplicationModal({
         </section>
 
         {/* タグとメモ */}
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             タグとメモ
           </h3>

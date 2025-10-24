@@ -2,363 +2,532 @@
 
 import { useState, useMemo } from "react";
 import { useApplications } from "@/libs/hooks/useApplications";
-import ApplicationCard from "@/components/cards/ApplicationCard";
+import type { Application } from "@/types/application";
 import { Heading } from "@/components/catalyst/heading";
-import { TabList } from "@/components/forms/TabComponents";
-import { FileText, BarChart3, TrendingUp, Calendar, MapPin } from "lucide-react";
+import { X, Plus, Briefcase, Building2, Banknote, User, Tag as TagIcon, ExternalLink, CheckCircle, FileText, Edit2, Trash2 } from "lucide-react";
 
-type CompareView = "overview" | "salary" | "timeline" | "location";
+const MAX_COMPARE_ITEMS = 3;
 
 export default function ComparePage() {
-  const { applications, filteredApplications, statusStats, setFilterStatus, filterStatus } = useApplications();
-  const [compareView, setCompareView] = useState<CompareView>("overview");
-  const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
+  const { applications } = useApplications();
+  // 最多選 3 個,用陣列索引代表插槽位置
+  const [selectedSlots, setSelectedSlots] = useState<(string | null)[]>([null, null, null]);
+  const [isSelectingForSlot, setIsSelectingForSlot] = useState<number | null>(null);
 
-  // 比較視圖的 Tab 配置
-  const compareTabs = [
-    { id: "overview", label: "概要比較", icon: BarChart3 },
-    { id: "salary", label: "給与比較", icon: TrendingUp },
-    { id: "timeline", label: "スケジュール", icon: Calendar },
-    { id: "location", label: "勤務地", icon: MapPin },
-  ];
-
-  // 狀態篩選 Tabs
-  const statusTabs = useMemo(() => [
-    { id: "all", label: `全て (${statusStats.all})` },
-    { id: "bookmarked", label: `ブックマーク (${statusStats.bookmarked})` },
-    { id: "applied", label: `応募済み (${statusStats.applied})` },
-    { id: "interview", label: `面談・面接 (${statusStats.interview})` },
-    { id: "offer", label: `内定 (${statusStats.offer})` },
-    { id: "rejected", label: `辞退・不採用 (${statusStats.rejected})` },
-  ], [statusStats]);
-
-  // 選中的應募數據
+  // 獲取選中的應募數據
   const selectedApps = useMemo(() => 
-    applications.filter(app => selectedApplications.includes(app.id)),
-    [applications, selectedApplications]
+    selectedSlots.map(id => id ? applications.find(app => app.id === id) : null),
+    [selectedSlots, applications]
   );
 
-  // 切換選中狀態
-  const toggleApplicationSelection = (id: string) => {
-    setSelectedApplications(prev => 
-      prev.includes(id) 
-        ? prev.filter(appId => appId !== id)
-        : [...prev, id]
-    );
+  // 選擇應募到指定插槽
+  const selectApplication = (slotIndex: number, appId: string) => {
+    const newSlots = [...selectedSlots];
+    newSlots[slotIndex] = appId;
+    setSelectedSlots(newSlots);
+    setIsSelectingForSlot(null);
   };
 
-  // 清除所有選中
-  const clearSelection = () => {
-    setSelectedApplications([]);
+  // 移除插槽中的應募
+  const removeFromSlot = (slotIndex: number) => {
+    const newSlots = [...selectedSlots];
+    newSlots[slotIndex] = null;
+    setSelectedSlots(newSlots);
   };
 
-  // 全選當前篩選結果
-  const selectAllFiltered = () => {
-    setSelectedApplications(filteredApplications.map(app => app.id));
+  // 清除所有選擇
+  const clearAll = () => {
+    setSelectedSlots([null, null, null]);
+    setIsSelectingForSlot(null);
   };
 
-  // 給与比較數據
-  const salaryComparison = useMemo(() => {
-    return selectedApps.map(app => ({
-      id: app.id,
-      companyName: app.companyName,
-      position: app.position,
-      postedSalary: app.postedSalary,
-      desiredSalary: app.desiredSalary,
-      offerSalary: app.offerSalary,
-    }));
-  }, [selectedApps]);
+  // 獲取可選擇的應募(排除已選中的)
+  const availableApplications = useMemo(() => 
+    applications.filter(app => !selectedSlots.includes(app.id)),
+    [applications, selectedSlots]
+  );
 
-  // 時間軸數據
-  const timelineData = useMemo(() => {
-    return selectedApps
-      .filter(app => app.schedule?.deadline)
-      .map(app => ({
-        id: app.id,
-        companyName: app.companyName,
-        position: app.position,
-        event: app.schedule?.nextEvent || "未定",
-        deadline: app.schedule?.deadline!,
-        interviewMethod: app.schedule?.interviewMethod,
-      }))
-      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-  }, [selectedApps]);
+  // 格式化薪資
+  const formatSalary = (app: Application | null | undefined): string => {
+    if (!app) return "-";
+    
+    if (app.offerSalary?.salaryBreakdown) {
+      const total = app.offerSalary.salaryBreakdown.reduce((sum, item) => sum + item.salary, 0);
+      return `¥${total}万`;
+    }
+    
+    if (app.desiredSalary) {
+      return `¥${app.desiredSalary}万`;
+    }
+    
+    if (app.postedSalary) {
+      const min = app.postedSalary.minAnnualSalary || 0;
+      const max = app.postedSalary.maxAnnualSalary || 0;
+      return `¥${min}〜${max}万`;
+    }
+    
+    return "-";
+  };
+
+  // 獲取應募方法
+  const getApplicationMethod = (app: Application | null | undefined): string => {
+    if (!app?.applicationMethod) return "-";
+    
+    switch (app.applicationMethod.type) {
+      case "job_site":
+        return app.applicationMethod.siteName;
+      case "referral":
+        return `紹介: ${app.applicationMethod.referrerName}`;
+      case "direct":
+        return "直接応募";
+      default:
+        return "-";
+    }
+  };
+
+  // 獲取狀態標籤
+  const getStatusLabel = (app: Application | null | undefined): string => {
+    if (!app) return "-";
+    switch (app.status) {
+      case "bookmarked": return "ブックマーク";
+      case "applied": return "応募済み";
+      case "interview": return "面談・面接";
+      case "offer": return "内定";
+      case "rejected": return "辞退・不採用";
+      default: return "-";
+    }
+  };
+
+  const getStatusColor = (app: Application | null | undefined): string => {
+    if (!app) return "bg-gray-100 text-gray-600";
+    switch (app.status) {
+      case "bookmarked": return "bg-blue-100 text-blue-700";
+      case "applied": return "bg-purple-100 text-purple-700";
+      case "interview": return "bg-yellow-100 text-yellow-700";
+      case "offer": return "bg-green-100 text-green-700";
+      case "rejected": return "bg-red-100 text-red-700";
+      default: return "bg-gray-100 text-gray-600";
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white">
+    <div className="min-h-screen bg-base-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex w-full flex-wrap items-end justify-between gap-4 border-b border-zinc-950/10 pb-4 dark:border-white/10">
+        <div className="flex w-full flex-wrap items-end justify-between gap-4 border-b border-base-300 pb-6 mb-8">
           <div>
             <Heading>応募比較</Heading>
-            <p className="mt-2 text-base/6 text-base-content/50 sm:text-sm/6">
-              複数の応募を比較して最適な選択をしましょう
+            <p className="mt-2 text-base/6 text-base-content/60 sm:text-sm/6">
+              最大3件の応募を選択して比較できます
             </p>
           </div>
-          <div className="flex gap-2">
-            {selectedApplications.length > 0 && (
-              <button
-                onClick={clearSelection}
-                className="btn btn-ghost btn-sm"
-              >
-                選択をクリア ({selectedApplications.length})
-              </button>
-            )}
+          {selectedSlots.some(slot => slot !== null) && (
             <button
-              onClick={selectAllFiltered}
-              className="btn btn-primary btn-sm"
+              onClick={clearAll}
+              className="btn btn-ghost btn-sm"
             >
-              全て選択 ({filteredApplications.length})
+              すべてクリア
             </button>
-          </div>
+          )}
         </div>
 
-        {/* 狀態篩選 Tabs */}
-        <div className="mb-6">
-          <TabList
-            tabs={statusTabs}
-            activeTab={filterStatus}
-            onTabChange={(tabId) => setFilterStatus(tabId as any)}
-            className="mb-4"
-          />
-        </div>
-
-        {/* 比較視圖 Tabs */}
-        <div className="mb-6">
-          <TabList
-            tabs={compareTabs}
-            activeTab={compareView}
-            onTabChange={(tabId) => setCompareView(tabId as CompareView)}
-            className="mb-4"
-          />
-        </div>
-
-        {/* 選中狀態顯示 */}
-        {selectedApplications.length > 0 && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-blue-900">
-                  {selectedApplications.length} 件の応募を比較中
-                </span>
-              </div>
-              <button
-                onClick={clearSelection}
-                className="btn btn-ghost btn-sm text-blue-600 hover:text-blue-800"
-              >
-                クリア
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 比較內容 */}
-        {selectedApplications.length === 0 ? (
-          <div className="text-center py-12">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              比較する応募を選択してください
-            </h3>
-            <p className="text-gray-500 mb-4">
-              応募を選択して詳細な比較を行えます
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* 概要比較 */}
-            {compareView === "overview" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {selectedApps.map((application) => (
-                  <div key={application.id} className="relative">
-                    <input
-                      type="checkbox"
-                      checked={selectedApplications.includes(application.id)}
-                      onChange={() => toggleApplicationSelection(application.id)}
-                      className="absolute top-2 left-2 z-10 checkbox checkbox-primary"
-                    />
-                    <ApplicationCard
-                      application={application}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 給与比較 */}
-            {compareView === "salary" && (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">給与比較</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          会社名
+        {/* 比較表格 - 整合選擇器 */}
+        {(
+          <div className="bg-white rounded-xl overflow-hidden mb-8">
+            <div className="overflow-x-auto">
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: '200px' }} />
+                  <col />
+                  <col />
+                  <col />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="px-6 py-6 text-left text-sm font-semibold text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-base-content/40" />
+                        <span>応募先</span>
+                      </div>
+                    </th>
+                    {selectedSlots.map((slotId, index) => {
+                      const app = selectedApps[index];
+                      return (
+                        <th key={index} className="px-6 py-6 text-center relative">
+                          {app ? (
+                            // 已選擇的應募
+                            <div className="flex flex-col gap-3">
+                              {/* 公司名 */}
+                              <div className="font-bold text-base truncate">
+                                {app.companyName}
+                              </div>
+                              
+                              {/* 操作按鈕 - 只用 icon */}
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => setIsSelectingForSlot(index)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary hover:text-white transition-all border border-base-300"
+                                  title="変更"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => removeFromSlot(index)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-error hover:text-white transition-all border border-base-300"
+                                  title="削除"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            // 空插槽
+                            <button
+                              onClick={() => setIsSelectingForSlot(index)}
+                              className="w-full py-3 flex flex-col items-center justify-center gap-2 hover:bg-base-50 rounded-lg transition-all border-2 border-dashed border-base-300"
+                            >
+                              <Plus className="w-5 h-5 text-base-content/40" />
+                            </button>
+                          )}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          職種
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          掲載給与
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          希望給与
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          オファー給与
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {salaryComparison.map((app) => (
-                        <tr key={app.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {app.companyName}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {app.position}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {app.postedSalary ? (
-                              app.postedSalary.type === "annual" ? (
-                                `${app.postedSalary.minAnnualSalary || 0} - ${app.postedSalary.maxAnnualSalary || 0}万円`
-                              ) : (
-                                `${app.postedSalary.minMonthlySalary || 0} - ${app.postedSalary.maxMonthlySalary || 0}万円/月`
-                              )
-                            ) : (
-                              "未記載"
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {app.desiredSalary ? `${app.desiredSalary}万円` : "未設定"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {app.offerSalary ? (
-                              app.offerSalary.salaryBreakdown ? (
-                                `${app.offerSalary.salaryBreakdown.reduce((sum, item) => sum + item.salary, 0)}万円`
-                              ) : (
-                                "内定受領"
-                              )
-                            ) : (
-                              "未受領"
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-base-200">
+                  {/* 職種 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-base-content/40" />
+                        <span>職種</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center text-sm ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? app.position : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
 
-            {/* 時間軸比較 */}
-            {compareView === "timeline" && (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">スケジュール比較</h3>
-                </div>
-                <div className="p-6">
-                  {timelineData.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">スケジュール情報がありません</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {timelineData.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{item.companyName}</h4>
-                            <p className="text-sm text-gray-500">{item.position}</p>
-                            <p className="text-sm text-gray-600">{item.event}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-gray-900">
-                              {new Date(item.deadline).toLocaleDateString('ja-JP')}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {new Date(item.deadline).toLocaleTimeString('ja-JP', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </p>
-                            {item.interviewMethod && (
-                              <p className="text-xs text-gray-400">
-                                {item.interviewMethod.type === "online" ? "オンライン" : "対面"}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                  {/* 雇用形態 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-base-content/40" />
+                        <span>雇用形態</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center text-sm ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? (
+                          app.employmentType === "full_time" ? "正社員" :
+                          app.employmentType === "contract" ? "契約社員" :
+                          app.employmentType === "freelance" ? "フリーランス" :
+                          app.employmentType === "side_job" ? "副業" : "-"
+                        ) : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
 
-            {/* 勤務地比較 */}
-            {compareView === "location" && (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">勤務地比較</h3>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {selectedApps.map((app) => (
-                      <div key={app.id} className="p-4 bg-gray-50 rounded-lg">
-                        <h4 className="font-medium text-gray-900 mb-2">{app.companyName}</h4>
-                        <p className="text-sm text-gray-500 mb-2">{app.position}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          <span>
-                            {app.schedule?.interviewMethod?.type === "in_person" 
-                              ? app.schedule.interviewMethod.address 
-                              : "リモート可"
-                            }
+                  {/* 掲載年収 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="w-4 h-4 text-base-content/40" />
+                        <span>掲載年収</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center text-sm ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? (
+                          app.postedSalary ? 
+                            `¥${app.postedSalary.minAnnualSalary || 0}〜${app.postedSalary.maxAnnualSalary || 0}万` 
+                            : "-"
+                        ) : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* 希望年収 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="w-4 h-4 text-base-content/40" />
+                        <span>希望年収</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center text-sm ${!app ? 'bg-base-100' : 'font-semibold'}`}>
+                        {app ? (
+                          app.desiredSalary ? `¥${app.desiredSalary}万` : "-"
+                        ) : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* オファー年収 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="w-4 h-4 text-base-content/40" />
+                        <span>オファー年収</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center text-sm ${!app ? 'bg-base-100' : 'font-semibold text-success'}`}>
+                        {app ? (
+                          app.offerSalary?.salaryBreakdown ?
+                            `¥${app.offerSalary.salaryBreakdown.reduce((sum, item) => sum + item.salary, 0)}万`
+                            : "-"
+                        ) : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* 応募経路 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-base-content/40" />
+                        <span>応募経路</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center text-sm ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? getApplicationMethod(app) : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* 狀態 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-base-content/40" />
+                        <span>ステータス</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(app)}`}>
+                            {getStatusLabel(app)}
                           </span>
-                        </div>
-                        {app.tags?.some(tag => tag.includes("リモート")) && (
-                          <div className="mt-2">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              リモート対応
-                            </span>
+                        ) : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* URL */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-base-content/40" />
+                        <span>会社サイト</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 text-center text-sm ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? (
+                          app.companyUrl ? (
+                            <a
+                              href={app.companyUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              サイトを見る
+                            </a>
+                          ) : (
+                            "-"
+                          )
+                        ) : <span className="text-base-content/30">-</span>}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* Tags */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <TagIcon className="w-4 h-4 text-base-content/40" />
+                        <span>タグ</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? (
+                          <div className="flex flex-wrap gap-1.5 justify-center">
+                            {app.tags && app.tags.length > 0 ? (
+                              app.tags.map((tag, i) => (
+                                <span key={i} className="badge badge-sm badge-outline whitespace-nowrap">
+                                  {tag}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-base-content/40">-</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-base-content/30">-</span>
                           </div>
                         )}
-                      </div>
+                      </td>
                     ))}
-                  </div>
-                </div>
-              </div>
-            )}
+                  </tr>
+
+                  {/* オファー詳細 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="w-4 h-4 text-base-content/40" />
+                        <span>オファー詳細</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? (
+                          app.offerSalary?.salaryBreakdown ? (
+                            <div className="space-y-2">
+                              {app.offerSalary.salaryBreakdown.map((item, i) => (
+                                <div key={i} className="flex justify-between items-center text-xs">
+                                  <span className="text-base-content/70">{item.salaryType}</span>
+                                  <span className="font-medium">¥{item.salary}万</span>
+                                </div>
+                              ))}
+                              {app.offerSalary.notes && (
+                                <div className="mt-2 pt-2 border-t border-base-200">
+                                  <p className="text-xs text-base-content/60 italic">
+                                    {app.offerSalary.notes}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <span className="text-xs text-base-content/40">-</span>
+                            </div>
+                          )
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-base-content/30">-</span>
+                          </div>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* 備註 */}
+                  <tr>
+                    <td className="px-6 py-4 text-sm font-medium text-base-content/70 bg-base-50 sticky left-0 z-10">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-base-content/40" />
+                        <span>備考</span>
+                      </div>
+                    </td>
+                    {selectedApps.map((app, index) => (
+                      <td key={index} className={`px-6 py-4 ${!app ? 'bg-base-100' : ''}`}>
+                        {app ? (
+                          app.notes ? (
+                            <div className="text-sm text-base-content/70 max-w-xs">
+                              <p className="line-clamp-3" title={app.notes}>
+                                {app.notes}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <span className="text-xs text-base-content/40">-</span>
+                            </div>
+                          )
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-base-content/30">-</span>
+                          </div>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
-        {/* 應募列表（用於選擇） */}
-        {selectedApplications.length === 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">応募一覧</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredApplications.map((application) => (
-                <div key={application.id} className="relative">
-                  <input
-                    type="checkbox"
-                    checked={selectedApplications.includes(application.id)}
-                    onChange={() => toggleApplicationSelection(application.id)}
-                    className="absolute top-2 left-2 z-10 checkbox checkbox-primary"
-                  />
-                  <ApplicationCard
-                    application={application}
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                  />
-                </div>
-              ))}
+        {/* 選擇應募的 Modal */}
+        {isSelectingForSlot !== null && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-base-200">
+                <h3 className="text-lg font-semibold">
+                  応募を選択 (スロット {isSelectingForSlot + 1})
+                </h3>
+                <button
+                  onClick={() => setIsSelectingForSlot(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-base-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {availableApplications.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-base-content/60">
+                      選択可能な応募がありません
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {availableApplications.map((app) => (
+                      <button
+                        key={app.id}
+                        onClick={() => selectApplication(isSelectingForSlot, app.id)}
+                        className="text-left border-2 border-base-300 rounded-lg p-4 hover:border-primary hover:bg-base-50 transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-base truncate pr-2">
+                            {app.companyName}
+                          </h4>
+                          <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(app)}`}>
+                            {getStatusLabel(app)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-base-content/70 mb-2 truncate">
+                          {app.position}
+                        </p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-base-content/60">
+                            {getApplicationMethod(app)}
+                          </span>
+                          <span className="font-medium text-success">
+                            {formatSalary(app)}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* 空狀態提示 */}
+        {selectedSlots.every(slot => slot === null) && (
+          <div className="text-center py-12 bg-base-50 rounded-xl">
+            <div className="w-16 h-16 rounded-full bg-base-200 flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-8 h-8 text-base-content/40" />
+            </div>
+            <h3 className="text-lg font-medium text-base-content mb-2">
+              応募を選択して比較を開始
+            </h3>
+            <p className="text-base-content/60">
+              上のスロットをクリックして、比較したい応募を選択してください
+            </p>
           </div>
         )}
       </div>

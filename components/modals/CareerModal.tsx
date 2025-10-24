@@ -142,9 +142,9 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
       onClose={onClose} 
       title={career ? "職務経歴を編集" : "職務経歴を追加"}
     >
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* 基本情報 */}
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
             基本情報
           </h3>
@@ -217,7 +217,7 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
         </section>
 
         {/* Offer Salary Section */}
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2 pb-2 border-b border-base-300">
             <h3 className="text-lg font-semibold text-base-content">オファー給与情報</h3>
             {offerSalary ? (
@@ -271,7 +271,7 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
         </section>
 
         {/* Salary History Section */}
-        <section className="bg-base-200 rounded-lg p-6">
+        <section className="bg-base-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2 pb-2 border-b border-base-300">
             <h3 className="text-lg font-semibold text-base-content">給与履歴</h3>
             <button

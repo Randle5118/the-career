@@ -10,7 +10,7 @@ import apiClient from "@/libs/api";
 import logo from "@/app/icon.png";
 import config from "@/config";
 import { toast } from "react-hot-toast";
-import { Home, ClipboardList, Menu, X, CreditCard, LogOut, ListCheck, Calendar, Briefcase, BarChart } from "lucide-react";
+import { Home, ClipboardList, Menu, X, CreditCard, LogOut, ListCheck, Calendar, Briefcase, BarChart, FlaskConical } from "lucide-react";
 
 const navLinks = [
   {
@@ -35,18 +35,18 @@ const navLinks = [
   },
   {
     href: "/dashboard/statuses",
-    label: "ステータス管理",
+    label: "応募ステータス",
     icon: ListCheck,
-  },
-  {
-    href: "/dashboard/calendar",
-    label: "カレンダー",
-    icon: Calendar,
   },
   {
     href: "/dashboard/compare",
     label: "比較する",
     icon: BarChart,
+  },
+  {
+    href: "/dashboard/test",
+    label: "Test (AI PDF)",
+    icon: FlaskConical,
   },
 ];
 
