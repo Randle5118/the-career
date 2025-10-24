@@ -1,0 +1,18 @@
+# -----------------------------------------------------------------------------
+# Resend: https://shipfa.st/docs/features/emails
+# -----------------------------------------------------------------------------
+RESEND_API_KEY=
+
+# -----------------------------------------------------------------------------
+# Database URI: https://shipfa.st/docs/features/database
+# -----------------------------------------------------------------------------
+NEXT_PUBLIC_SUPABASE_URL=https://hbohelcdkxthgbccdydw.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhib2hlbGNka3h0aGdiY2NkeWR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2Nzc5NzEsImV4cCI6MjA3NTI1Mzk3MX0.0NM11HouGhYgHJSbysbBYVyavoIczizMvNBBWlm_EPI
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhib2hlbGNka3h0aGdiY2NkeWR3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTY3Nzk3MSwiZXhwIjoyMDc1MjUzOTcxfQ.j-gT2HrdC9664t7GIlR_EhwQoDvzNsS5pmHqCUZT6Fo
+
+# -----------------------------------------------------------------------------
+# Stripe: https://shipfa.st/docs/features/payments
+# -----------------------------------------------------------------------------
+STRIPE_PUBLIC_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
