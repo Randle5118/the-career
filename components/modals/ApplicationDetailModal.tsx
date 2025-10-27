@@ -36,7 +36,7 @@ export default function ApplicationDetailModal({
       case 'schedule':
         // 行事曆頁面：日程優先
         return [
-          { id: 'schedule', label: '日程管理', component: <ScheduleSection application={application} /> },
+          { id: 'schedule', label: '日程管理', component: <ScheduleSection application={application} onEditClick={onEdit} /> },
           { id: 'basic', label: '基本情報', component: <BasicInfoSection application={application} /> },
         ];
       case 'status':
@@ -45,7 +45,7 @@ export default function ApplicationDetailModal({
         // 應募一覽和狀態管理：基本情報優先
         return [
           { id: 'basic', label: '基本情報', component: <BasicInfoSection application={application} /> },
-          { id: 'schedule', label: '日程管理', component: <ScheduleSection application={application} /> },
+          { id: 'schedule', label: '日程管理', component: <ScheduleSection application={application} onEditClick={onEdit} /> },
         ];
     }
   };

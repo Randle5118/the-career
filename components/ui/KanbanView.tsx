@@ -46,7 +46,7 @@ const columns = [
   },
   {
     id: "rejected",
-    title: "辞退・不採用",
+    title: "応募終了",
     color: "bg-error/20",
   },
 ];

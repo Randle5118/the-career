@@ -6,9 +6,10 @@ import { Calendar, Video, Building2, Clock } from "lucide-react";
 
 interface ScheduleSectionProps {
   application: Application;
+  onEditClick?: () => void;
 }
 
-export default function ScheduleSection({ application }: ScheduleSectionProps) {
+export default function ScheduleSection({ application, onEditClick }: ScheduleSectionProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -22,7 +23,15 @@ export default function ScheduleSection({ application }: ScheduleSectionProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-base-content/60">
         <Calendar className="w-16 h-16 mb-4 text-base-content/40" />
-        <p className="text-sm">日程情報がありません</p>
+        <p className="text-sm mb-4">日程情報がありません</p>
+        {onEditClick && (
+          <button 
+            onClick={onEditClick}
+            className="btn btn-primary btn-sm"
+          >
+            日程管理を追加
+          </button>
+        )}
       </div>
     );
   }

@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import type { Application, ApplicationFormData } from "@/types/application";
-import { ApplicationModal, ApplicationDetailModal } from "@/components/modals";
+import { 
+  ApplicationModal, 
+  ApplicationDetailModal,
+  ApplicationInputMethodModal,
+  PDFUploadModal 
+} from "@/components/modals";
 import CalendarView from "@/components/ui/CalendarView";
 import KanbanView from "@/components/ui/KanbanView";
 import { Calendar, Columns } from "lucide-react";
@@ -23,16 +28,35 @@ export default function ApplicationsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("status");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isInputMethodModalOpen, setIsInputMethodModalOpen] = useState(false);
+  const [isPDFUploadModalOpen, setIsPDFUploadModalOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
   const [viewingApplication, setViewingApplication] = useState<Application | null>(null);
+  const [parsedData, setParsedData] = useState<Partial<ApplicationFormData> | null>(null);
 
   const handleAddNew = () => {
     setEditingApplication(null);
+    setParsedData(null);
+    setIsInputMethodModalOpen(true);
+  };
+
+  const handleManualInput = () => {
+    setIsInputMethodModalOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const handlePDFUpload = () => {
+    setIsInputMethodModalOpen(false);
+    setIsPDFUploadModalOpen(true);
+  };
+
+  const handlePDFParseSuccess = (data: Partial<ApplicationFormData>) => {
+    setParsedData(data);
+    setIsPDFUploadModalOpen(false);
     setIsModalOpen(true);
   };
 
   const handleViewDetail = (application: Application) => {
-    console.log('ApplicationsPage: handleViewDetail called', { application });
     setViewingApplication(application);
     setIsDetailModalOpen(true);
   };
@@ -51,6 +75,7 @@ export default function ApplicationsPage() {
   const handleClose = () => {
     setIsModalOpen(false);
     setEditingApplication(null);
+    setParsedData(null);
   };
 
   const handleDetailClose = () => {
@@ -95,7 +120,7 @@ export default function ApplicationsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="mt-6 border-b border-base-300">
+        <div className="border-b border-base-300">
           <div className="flex gap-4">
             <button
               onClick={() => setViewMode("status")}
@@ -150,10 +175,26 @@ export default function ApplicationsPage() {
           variant={viewMode === "calendar" ? "schedule" : "status"}
         />
 
+        {/* 入力方法選択 Modal */}
+        <ApplicationInputMethodModal
+          isOpen={isInputMethodModalOpen}
+          onClose={() => setIsInputMethodModalOpen(false)}
+          onManualInput={handleManualInput}
+          onPDFUpload={handlePDFUpload}
+        />
+
+        {/* PDF アップロード Modal */}
+        <PDFUploadModal
+          isOpen={isPDFUploadModalOpen}
+          onClose={() => setIsPDFUploadModalOpen(false)}
+          onParseSuccess={handlePDFParseSuccess}
+        />
+
         {/* 応募編輯 Modal */}
         <ApplicationModal
           isOpen={isModalOpen}
           application={editingApplication}
+          initialData={parsedData || undefined}
           onClose={handleClose}
           onSave={handleSave}
         />

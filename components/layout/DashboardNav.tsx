@@ -10,7 +10,8 @@ import apiClient from "@/libs/api";
 import logo from "@/app/icon.png";
 import config from "@/config";
 import { toast } from "react-hot-toast";
-import { Home, ClipboardList, Menu, X, CreditCard, LogOut, ListCheck, Calendar, Briefcase, BarChart, FlaskConical } from "lucide-react";
+import { Home, ClipboardList, Menu, X, CreditCard, LogOut, ListCheck, Calendar, Briefcase, BarChart, FlaskConical, FileText } from "lucide-react";
+// import ThemeColorSwitcher from "@/components/ui/ThemeColorSwitcher";
 
 const navLinks = [
   {
@@ -19,15 +20,20 @@ const navLinks = [
     icon: Home,
   },
   {
+    href: "/dashboard/resume",
+    label: "履歴書",
+    icon: FileText,
+  },
+  {
     href: "/dashboard/my-career",
     label: "MyCareer",
     icon: Briefcase,
   },
-  {
-    href: "/dashboard/side-jobs",
-    label: "副業・兼職",
-    icon: Briefcase,
-  },
+  // {
+  //   href: "/dashboard/side-jobs",
+  //   label: "副業・兼職",
+  //   icon: Briefcase,
+  // },
   {
     href: "/dashboard/applications",
     label: "応募一覧",
@@ -111,6 +117,9 @@ const DashboardNav = () => {
 
   return (
     <>
+      {/* Theme Color Switcher */}
+      {/* <ThemeColorSwitcher /> */}
+      
       {/* Mobile Header */}
       <header className="lg:hidden bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="flex items-center justify-between h-16 px-4">

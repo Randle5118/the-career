@@ -51,7 +51,7 @@ export const InterviewMethodInput: React.FC<InterviewMethodInputProps> = ({
         <FormField
           label="面接場所"
           name="address"
-          value={value.address}
+          value={value.address || ""}
           onChange={(e) => onChange({
             ...value,
             address: e.target.value
@@ -66,7 +66,7 @@ export const InterviewMethodInput: React.FC<InterviewMethodInputProps> = ({
           label="オンラインURL"
           name="url"
           type="url"
-          value={value.url}
+          value={value.url || ""}
           onChange={(e) => onChange({
             ...value,
             url: e.target.value

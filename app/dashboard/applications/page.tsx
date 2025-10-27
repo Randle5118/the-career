@@ -4,7 +4,12 @@ import { useState } from "react";
 import type { Application, ApplicationFormData } from "@/types/application";
 import ApplicationCard from "@/components/cards/ApplicationCard";
 import ApplicationListItem from "@/components/ui/ApplicationListItem";
-import { ApplicationModal, ApplicationDetailModal } from "@/components/modals";
+import { 
+  ApplicationModal, 
+  ApplicationDetailModal,
+  ApplicationInputMethodModal,
+  PDFUploadModal 
+} from "@/components/modals";
 import { TabList } from "@/components/forms/TabComponents";
 import { FileText, LayoutGrid, List } from "lucide-react";
 import { useApplications } from "@/libs/hooks/useApplications";
@@ -28,8 +33,11 @@ export default function ApplicationsPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isInputMethodModalOpen, setIsInputMethodModalOpen] = useState(false);
+  const [isPDFUploadModalOpen, setIsPDFUploadModalOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
   const [viewingApplication, setViewingApplication] = useState<Application | null>(null);
+  const [parsedData, setParsedData] = useState<Partial<ApplicationFormData> | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   // Tab 配置
@@ -39,11 +47,28 @@ export default function ApplicationsPage() {
     { id: "applied", label: `応募済み (${statusStats.applied})` },
     { id: "interview", label: `面談・面接 (${statusStats.interview})` },
     { id: "offer", label: `内定 (${statusStats.offer})` },
-    { id: "rejected", label: `辞退・不採用 (${statusStats.rejected})` },
+    { id: "rejected", label: `応募終了 (${statusStats.rejected})` },
   ];
 
   const handleAddNew = () => {
     setEditingApplication(null);
+    setParsedData(null);
+    setIsInputMethodModalOpen(true);
+  };
+
+  const handleManualInput = () => {
+    setIsInputMethodModalOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const handlePDFUpload = () => {
+    setIsInputMethodModalOpen(false);
+    setIsPDFUploadModalOpen(true);
+  };
+
+  const handlePDFParseSuccess = (data: Partial<ApplicationFormData>) => {
+    setParsedData(data);
+    setIsPDFUploadModalOpen(false);
     setIsModalOpen(true);
   };
 
@@ -66,6 +91,7 @@ export default function ApplicationsPage() {
   const handleClose = () => {
     setIsModalOpen(false);
     setEditingApplication(null);
+    setParsedData(null);
   };
 
   const handleDetailClose = () => {
@@ -90,10 +116,10 @@ export default function ApplicationsPage() {
   };
 
   return (
-    <div className="min-h-full bg-white">
-      <div className="container mx-auto px-4 py-8 md:px-8 max-w-7xl bg-white">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {/* Header */}
-        <div className="flex w-full flex-wrap items-end justify-between gap-4 border-b border-zinc-950/10 pb-4 dark:border-white/10">
+        <div className="flex w-full flex-wrap items-end justify-between gap-4 border-b border-zinc-950/10 pb-6 dark:border-white/10">
           <div>
             <Heading>応募管理</Heading>
             <p className="mt-2 text-base/6 text-base-content/50 sm:text-sm/6">
@@ -207,10 +233,26 @@ export default function ApplicationsPage() {
           variant="overview"
         />
 
+        {/* 入力方法選択 Modal */}
+        <ApplicationInputMethodModal
+          isOpen={isInputMethodModalOpen}
+          onClose={() => setIsInputMethodModalOpen(false)}
+          onManualInput={handleManualInput}
+          onPDFUpload={handlePDFUpload}
+        />
+
+        {/* PDF アップロード Modal */}
+        <PDFUploadModal
+          isOpen={isPDFUploadModalOpen}
+          onClose={() => setIsPDFUploadModalOpen(false)}
+          onParseSuccess={handlePDFParseSuccess}
+        />
+
         {/* 應募編輯 Modal */}
         <ApplicationModal
           isOpen={isModalOpen}
           application={editingApplication}
+          initialData={parsedData || undefined}
           onClose={handleClose}
           onSave={handleSave}
         />

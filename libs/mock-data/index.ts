@@ -14,21 +14,25 @@
 import { MOCK_CAREERS_FULL } from "./careers";
 import { MOCK_APPLICATIONS_FULL } from "./applications";
 import { MOCK_SIDE_JOBS, SIDE_JOBS_STATS } from "./side-jobs";
+import { MOCK_RESUME } from "./resumes";
 
 // 導出數據
 export { MOCK_CAREERS_FULL } from "./careers";
 export { MOCK_APPLICATIONS_FULL } from "./applications";
 export { MOCK_SIDE_JOBS, SIDE_JOBS_STATS } from "./side-jobs";
+export { MOCK_RESUME } from "./resumes";
 
 // 導出類型
 export type { Career } from "@/types/career";
 export type { Application } from "@/types/application";
+export type { Resume } from "@/types/resume";
 import type { ApplicationStatus } from "@/types/application";
 
 // 統一的數據獲取函數
 export const getMockCareers = () => MOCK_CAREERS_FULL;
 export const getMockApplications = () => MOCK_APPLICATIONS_FULL;
 export const getMockSideJobs = () => MOCK_SIDE_JOBS;
+export const getMockResume = () => MOCK_RESUME;
 
 // 根據 ID 獲取單一數據
 export const getMockCareerById = (id: string) => 

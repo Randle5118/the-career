@@ -259,7 +259,7 @@ export default function ApplicationCard({
                     {formatSalary(application.postedSalary)}
                   </div>
                   {application.postedSalary.notes && (
-                    <div className="text-xs text-base-content/50 mt-0.5">
+                    <div className="text-xs text-base-content/50 mt-0.5 line-clamp-2">
                       {application.postedSalary.notes}
                     </div>
                   )}
@@ -284,7 +284,7 @@ export default function ApplicationCard({
                     オファー: {formatOfferSalary(application.offerSalary)}
                   </div>
                   {application.offerSalary.notes && (
-                    <div className="text-xs text-base-content/60 mt-0.5">
+                    <div className="text-xs text-base-content/60 mt-0.5 line-clamp-2">
                       {application.offerSalary.notes}
                     </div>
                   )}
@@ -359,7 +359,7 @@ export default function ApplicationCard({
             <div className="mt-4">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Tag className="w-3.5 h-3.5 text-base-content/40 shrink-0" />
-                {application.tags.map((tag) => (
+                {application.tags.slice(0, 3).map((tag) => (
                   <span
                     key={tag}
                     className="badge badge-sm bg-base-200 text-base-content/80 border-base-300"
@@ -367,6 +367,11 @@ export default function ApplicationCard({
                     {tag}
                   </span>
                 ))}
+                {application.tags.length > 3 && (
+                  <span className="text-xs text-base-content/50">
+                    +{application.tags.length - 3}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -375,7 +380,7 @@ export default function ApplicationCard({
           {application.notes && (
             <div className="mt-4 text-sm">
               <div className="font-medium mb-1.5 text-base-content/80">メモ</div>
-              <p className="text-base-content/60 line-clamp-3 whitespace-pre-wrap">{application.notes}</p>
+              <p className="text-base-content/60 line-clamp-2 whitespace-pre-wrap">{application.notes}</p>
             </div>
           )}
         </div>

@@ -3,6 +3,60 @@
   themes: light --default;
 }
 
+/* 自定義主色調 */
+:root {
+  --primary-color: #7fd2b2;
+  --primary-content-color: #FFFFFF;
+}
+
+.btn-primary {
+  background-color: #7fd2b2 !important;
+  border-color: #7fd2b2 !important;
+  color: #FFFFFF !important;
+}
+.btn-primary:hover {
+  background-color: #7fd2b2 !important;
+  border-color: #7fd2b2 !important;
+  color: #FFFFFF !important;
+  filter: brightness(0.9) !important;
+}
+.text-primary {
+  color: #7fd2b2 !important;
+}
+.bg-primary {
+  background-color: #7fd2b2 !important;
+  color: #FFFFFF !important;
+}
+.border-primary {
+  border-color: #7fd2b2 !important;
+}
+.progress-primary::-webkit-progress-value {
+  background-color: #7fd2b2 !important;
+}
+.progress-primary::-moz-progress-bar {
+  background-color: #7fd2b2 !important;
+}
+.badge-primary {
+  background-color: #7fd2b2 !important;
+  color: #FFFFFF !important;
+  border-color: #7fd2b2 !important;
+}
+.hover\:text-primary:hover {
+  color: #7fd2b2 !important;
+}
+.hover\:border-primary:hover {
+  border-color: #7fd2b2 !important;
+}
+.hover\:bg-primary\/5:hover {
+  background-color: #7fd2b20D !important;
+}
+.bg-primary\/10 {
+  background-color: #7fd2b21A !important;
+}
+.bg-primary\/5 {
+  background-color: #7fd2b20D !important;
+}
+
 @theme {
   /* 組合英文和日文字體，優先使用 Inter，日文使用 Noto Sans JP */
   --font-sans: var(--font-inter), var(--font-noto-sans-jp), system-ui, -apple-system, sans-serif;

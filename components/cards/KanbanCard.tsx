@@ -176,7 +176,7 @@ export default function KanbanCard({
           <div className="mb-3 p-2.5 bg-warning/10 border border-warning/20 rounded text-xs">
             <div className="space-y-2">
               {/* 活動名稱 */}
-              <div className="font-medium truncate text-center text-base-content/80">
+              <div className="font-medium text-center text-base-content/80 line-clamp-2">
                 {application.schedule.nextEvent}
               </div>
               
@@ -229,7 +229,7 @@ export default function KanbanCard({
         )}
 
         {/* 公司名 */}
-        <div className="flex items-center justify-center gap-1.5 mb-2">
+        <div className="flex items-center justify-center gap-1.5">
           <h3 className="font-semibold text-base truncate">{application.companyName}</h3>
           {application.companyUrl && (
             <a
@@ -244,57 +244,11 @@ export default function KanbanCard({
             </a>
           )}
         </div>
-        {/* 雇用形態 Badge */}
-        {application.employmentType && (
-          <div className="flex justify-center mb-2">
-            <div className="badge badge-sm badge-outline">
-              {employmentTypeLabels[application.employmentType]}
-            </div>
-          </div>
-        )}
-        
-        {/* 職種 */}
-        <p className="text-center text-base-content/80 text-sm font-medium mb-2">
-          {application.position}
-        </p>
 
         {/* 應募方法 */}
-        <div className="flex items-center justify-center gap-1.5 text-xs text-base-content/60 mb-1">
+        <div className="flex items-center justify-center gap-1.5 text-xs text-base-content/60 mb-2 p-2 bg-base-200/50 rounded">
           <methodInfo.icon className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{methodInfo.text}</span>
-        </div>
-
-        {/* 給与情報 */}
-        <div className="space-y-1">
-          {/* 掲載年収 */}
-          {application.postedSalary && (application.postedSalary.minAnnualSalary || application.postedSalary.maxAnnualSalary) && (
-            <div className="flex items-center justify-center gap-1.5 text-xs text-base-content/60">
-              <Banknote className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">
-                掲載: {formatSalaryCompact(application.postedSalary)}
-              </span>
-            </div>
-          )}
-          
-          {/* 希望年収 */}
-          {application.desiredSalary && (
-            <div className="flex items-center justify-center gap-1.5 text-xs text-base-content/70">
-              <Banknote className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate font-medium">
-                希望: {application.desiredSalary}万
-              </span>
-            </div>
-          )}
-          
-          {/* オファー年収 */}
-          {application.offerSalary?.salaryBreakdown && (
-            <div className="flex items-center justify-center gap-1.5 text-xs">
-              <Banknote className="w-3.5 h-3.5 shrink-0 text-success" />
-              <span className="truncate font-medium text-success">
-                オファー: {application.offerSalary.salaryBreakdown.reduce((sum, item) => sum + item.salary, 0)}万
-              </span>
-            </div>
-          )}
         </div>
 
         {/* 詳細を見るボタン */}
@@ -307,7 +261,7 @@ export default function KanbanCard({
               onEdit(application);
             }
           }}
-          className="mt-3 w-full text-xs text-center text-base-content/60 hover:text-base-content py-2 hover:bg-base-200 rounded transition-colors border border-base-300"
+          className="w-full text-xs text-center text-base-content/60 hover:text-base-content py-2 hover:bg-base-200 rounded transition-colors border border-base-300"
         >
           詳細を見る
         </button>

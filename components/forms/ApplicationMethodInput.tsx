@@ -74,7 +74,7 @@ export const ApplicationMethodInput: React.FC<ApplicationMethodInputProps> = ({
             <FormField
               label="求人サイト名"
               name="siteName"
-              value={value.siteName}
+              value={value.siteName || ""}
               onChange={(e) => onChange({
                 ...value,
                 siteName: e.target.value
@@ -101,7 +101,7 @@ export const ApplicationMethodInput: React.FC<ApplicationMethodInputProps> = ({
             label="求人サイトURL"
             name="siteUrl"
             type="url"
-            value={value.siteUrl}
+            value={value.siteUrl || ""}
             onChange={(e) => onChange({
               ...value,
               siteUrl: e.target.value
@@ -111,7 +111,7 @@ export const ApplicationMethodInput: React.FC<ApplicationMethodInputProps> = ({
           />
 
           {/* Scout 詳細資訊 - 可選 */}
-          <details className="group">
+          <details className="group" open>
             <summary className="cursor-pointer text-sm font-medium text-base-content/70 hover:text-base-content py-2">
               スカウト詳細情報（任意）
             </summary>
@@ -196,7 +196,7 @@ export const ApplicationMethodInput: React.FC<ApplicationMethodInputProps> = ({
             <FormField
               label="紹介者名"
               name="referrerName"
-              value={value.referrerName}
+              value={value.referrerName || ""}
               onChange={(e) => onChange({
                 ...value,
                 referrerName: e.target.value
@@ -207,7 +207,7 @@ export const ApplicationMethodInput: React.FC<ApplicationMethodInputProps> = ({
             <FormField
               label="紹介者との関係"
               name="personFrom"
-              value={value.personFrom}
+              value={value.personFrom || ""}
               onChange={(e) => onChange({
                 ...value,
                 personFrom: e.target.value
@@ -262,7 +262,7 @@ export const ApplicationMethodInput: React.FC<ApplicationMethodInputProps> = ({
             label="応募サイトURL"
             name="siteUrl"
             type="url"
-            value={value.siteUrl}
+            value={value.siteUrl || ""}
             onChange={(e) => onChange({
               ...value,
               siteUrl: e.target.value
@@ -275,7 +275,7 @@ export const ApplicationMethodInput: React.FC<ApplicationMethodInputProps> = ({
             <FormField
               label="連絡先担当者"
               name="contactPerson"
-              value={value.contactPerson}
+              value={value.contactPerson || ""}
               onChange={(e) => onChange({
                 ...value,
                 contactPerson: e.target.value
