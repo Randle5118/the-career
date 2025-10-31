@@ -58,7 +58,7 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
         <h4 className="text-lg font-semibold text-base-content mb-4">連絡先</h4>
         
         <div className="space-y-3">
-          {resume.email && (
+          {resume.email?.trim() && (
             <div className="flex items-center gap-3 text-sm">
               <Mail className="w-4 h-4 text-base-content/50" />
               <a href={`mailto:${resume.email}`} className="hover:text-primary">
@@ -67,7 +67,7 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
             </div>
           )}
           
-          {resume.phone && (
+          {resume.phone?.trim() && (
             <div className="flex items-center gap-3 text-sm">
               <Phone className="w-4 h-4 text-base-content/50" />
               <a href={`tel:${resume.phone}`} className="hover:text-primary">
@@ -76,14 +76,14 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
             </div>
           )}
           
-          {(resume.prefecture || resume.city) && (
+          {(resume.prefecture?.trim() || resume.city?.trim()) && (
             <div className="flex items-start gap-3 text-sm">
               <MapPin className="w-4 h-4 text-base-content/50 mt-0.5" />
               <div>
-                <p>〒{resume.postal_code}</p>
+                {resume.postal_code?.trim() && <p>〒{resume.postal_code}</p>}
                 <p>
                   {resume.prefecture}{resume.city}{resume.address_line}
-                  {resume.building && <span className="ml-1">{resume.building}</span>}
+                  {resume.building?.trim() && <span className="ml-1">{resume.building}</span>}
                 </p>
               </div>
             </div>
@@ -92,12 +92,12 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
       </div>
       
       {/* SNS・ポートフォリオ */}
-      {(resume.linkedin_url || resume.github_url || resume.portfolio_url || resume.other_url) && (
+      {(resume.linkedin_url?.trim() || resume.github_url?.trim() || resume.portfolio_url?.trim() || resume.other_url?.trim()) && (
         <div className="bg-base-100 border border-base-300 rounded-lg p-6">
           <h4 className="text-lg font-semibold text-base-content mb-4">SNS・ポートフォリオ</h4>
           
           <div className="space-y-3">
-            {resume.linkedin_url && (
+            {resume.linkedin_url?.trim() && (
               <div className="flex items-center gap-3 text-sm">
                 <Linkedin className="w-4 h-4 text-base-content/50" />
                 <a 
@@ -111,7 +111,7 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
               </div>
             )}
             
-            {resume.github_url && (
+            {resume.github_url?.trim() && (
               <div className="flex items-center gap-3 text-sm">
                 <Github className="w-4 h-4 text-base-content/50" />
                 <a 
@@ -125,7 +125,7 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
               </div>
             )}
             
-            {resume.portfolio_url && (
+            {resume.portfolio_url?.trim() && (
               <div className="flex items-center gap-3 text-sm">
                 <Globe className="w-4 h-4 text-base-content/50" />
                 <a 
@@ -139,7 +139,7 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
               </div>
             )}
             
-            {resume.other_url && (
+            {resume.other_url?.trim() && (
               <div className="flex items-center gap-3 text-sm">
                 <Twitter className="w-4 h-4 text-base-content/50" />
                 <a 
@@ -157,11 +157,11 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
       )}
       
       {/* 自己PR・キャリアサマリー */}
-      {(resume.career_summary || resume.self_pr) && (
+      {(resume.career_summary?.trim() || resume.self_pr?.trim()) && (
         <div className="bg-base-100 border border-base-300 rounded-lg p-6">
           <h4 className="text-lg font-semibold text-base-content mb-4">自己PR・キャリアサマリー</h4>
           
-          {resume.career_summary && (
+          {resume.career_summary?.trim() && (
             <div className="mb-4">
               <h5 className="text-sm font-medium text-base-content/70 mb-2">キャリアサマリー</h5>
               <p className="text-sm text-base-content/80 whitespace-pre-wrap leading-relaxed">
@@ -170,7 +170,7 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
             </div>
           )}
           
-          {resume.self_pr && (
+          {resume.self_pr?.trim() && (
             <div>
               <h5 className="text-sm font-medium text-base-content/70 mb-2">自己PR</h5>
               <p className="text-sm text-base-content/80 whitespace-pre-wrap leading-relaxed">

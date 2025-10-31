@@ -3,13 +3,19 @@
  * 
  * 這是履歷書的 mock 數據，用於開發和測試
  * 基於用戶提供的實際履歷資料
+ * 
+ * Mock User UUID: 550e8400-e29b-41d4-a716-446655440000
+ * (與 Applications/Careers 使用同一測試用戶)
  */
 
 import type { Resume } from "@/types/resume";
 
+// Mock User ID (與其他 mock data 統一)
+export const MOCK_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+
 export const MOCK_RESUME: Resume = {
   id: 1,
-  user_id: "1",
+  user_id: MOCK_USER_ID,
   resume_name: "履歴書_2025",
   is_primary: true,
   is_public: true,

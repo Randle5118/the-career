@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useResume } from "@/libs/hooks/useResume";
 import { Heading } from "@/components/catalyst/heading";
@@ -21,8 +21,15 @@ export default function ResumeEditPage() {
   const router = useRouter();
   const { resume: originalResume, updateResume, isLoading } = useResume();
   const [activeTab, setActiveTab] = useState<TabId>("basic");
-  const [formData, setFormData] = useState<Resume | null>(originalResume);
+  const [formData, setFormData] = useState<Resume | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // 當 originalResume 載入完成時,同步到 formData
+  useEffect(() => {
+    if (originalResume) {
+      setFormData(originalResume);
+    }
+  }, [originalResume]);
   
   // Tab 配置
   const tabs = [
@@ -41,7 +48,7 @@ export default function ResumeEditPage() {
       [field]: value
     });
   };
-  
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -122,7 +129,7 @@ export default function ResumeEditPage() {
           <TabList
             tabs={tabs}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={(tabId) => setActiveTab(tabId as TabId)}
             className="mb-4"
           />
         </div>

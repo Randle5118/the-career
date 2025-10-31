@@ -140,3 +140,9 @@ export interface ResumeFormData {
   preferences?: Preferences;
 }
 
+// Published Resume 型別 (發布版履歷)
+export interface PublishedResume extends Resume {
+  published_at: string;
+  version: number;
+}
+

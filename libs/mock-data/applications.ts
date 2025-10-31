@@ -3,14 +3,37 @@
  * 
  * 代表未來的 applications 資料表
  * 包含所有應募相關的完整數據結構
+ * 
+ * Mock User UUID: 550e8400-e29b-41d4-a716-446655440000
+ * (使用統一的 mock user ID 用於開發測試)
+ * 
+ * ===== 薪資單位使用規則 =====
+ * Applications 表中的薪資欄位使用「万円」(萬日圓)為單位:
+ * 
+ * 1. postedSalary (掲載給与):
+ *    - minAnnualSalary: 600 = 年収 600万円
+ *    - maxAnnualSalary: 800 = 年収 800万円
+ * 
+ * 2. desiredSalary (希望給与):
+ *    - 750 = 年収 750万円
+ * 
+ * 3. offerSalary.salaryBreakdown (內定給与):
+ *    - salary: 800 = 年収 800万円 (基本給)
+ *    - salary: 200 = 年収 200万円 (賞与)
+ * 
+ * 注意: 與 Careers 表不同，Careers 使用「k」單位 (1k = 1千円)
+ *       例如: Careers 的 8000k = Applications 的 800万円
  */
 
 import type { Application } from "@/types/application";
 
+// Mock User ID (統一使用此 UUID 作為測試用戶)
+export const MOCK_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+
 export const MOCK_APPLICATIONS_FULL: Application[] = [
   {
     id: "app-001",
-    userId: "user-001",
+    userId: MOCK_USER_ID,
     companyName: "株式会社サンプル",
     companyUrl: "https://www.example.com",
     position: "フロントエンドエンジニア",
@@ -50,7 +73,7 @@ export const MOCK_APPLICATIONS_FULL: Application[] = [
   },
   {
     id: "app-002",
-    userId: "user-001",
+    userId: MOCK_USER_ID,
     companyName: "テック株式会社",
     companyUrl: "https://tech-company.jp",
     position: "バックエンドエンジニア",
@@ -83,7 +106,7 @@ export const MOCK_APPLICATIONS_FULL: Application[] = [
   },
   {
     id: "app-003",
-    userId: "user-001",
+    userId: MOCK_USER_ID,
     companyName: "リモートファースト企業",
     position: "フルリモートエンジニア",
     status: "bookmarked",
@@ -110,7 +133,7 @@ export const MOCK_APPLICATIONS_FULL: Application[] = [
   },
   {
     id: "app-004",
-    userId: "user-001",
+    userId: MOCK_USER_ID,
     companyName: "スタートアップXYZ",
     position: "CTO",
     status: "offer",
@@ -148,7 +171,7 @@ export const MOCK_APPLICATIONS_FULL: Application[] = [
   },
   {
     id: "app-005",
-    userId: "user-001",
+    userId: MOCK_USER_ID,
     companyName: "IQVIA Solutions Japan G.K.",
     companyUrl: "https://www.iqvia.com/ja-jp/locations/japan/about-iqvia-japan",
     position: "Project Manager (Data Science Related Projects)",
@@ -179,7 +202,7 @@ export const MOCK_APPLICATIONS_FULL: Application[] = [
   },
   {
     id: "app-006",
-    userId: "user-001",
+    userId: MOCK_USER_ID,
     companyName: "株式会社Matchbox Technologies",
     companyUrl: "https://www.matchboxtech.co.jp/",
     position: "カスタマーサクセス 【自社プロダクト／日本の労働力不足に貢献】",
@@ -226,7 +249,7 @@ export const MOCK_APPLICATIONS_FULL: Application[] = [
   },
   {
     id: "app-007",
-    userId: "user-001",
+    userId: MOCK_USER_ID,
     companyName: "株式会社ギークリー",
     companyUrl: "https://www.geekly.co.jp/corporate/about/outline/",
     position: "WEBディレクター（マネージャー）",
@@ -260,8 +283,8 @@ export const MOCK_APPLICATIONS_FULL: Application[] = [
     ],
     notes: "IT業界に特化した人材紹介事業を展開し、急成長中の企業。マネージャーは裁量権が大きく、スピーディーな意思決定が可能。オウンドメディアなど新規事業も積極展開しており、業界内での競争力が高い。書籍購入手当、保育料補助、育児リモートワークなど福利厚生が充実しており、年間休日125日、育休復帰率100%と働きやすい環境が整っている。",
     schedule: undefined,
-    createdAt: "2023-10-27T10:00:00Z",
-    updatedAt: "2023-10-27T10:00:00Z",
+    createdAt: "2025-10-27T10:00:00Z",
+    updatedAt: "2025-10-27T10:00:00Z",
   }
 ];
 

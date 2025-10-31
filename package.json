@@ -33,6 +33,7 @@
     "nextjs-toploader": "^3.7.15",
     "nodemailer": "^6.9.17",
     "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^3.11.174",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.4.1",

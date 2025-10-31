@@ -1,13 +1,12 @@
 /**
  * 統一的 Resume 數據管理 Hook
  * 
- * 提供統一的數據獲取、更新功能
- * 目前使用 mock 數據，一個用戶一個履歷
+ * 提供統一的數據獲取、更新、發布功能
+ * 與 Supabase API 整合
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { Resume, ResumeFormData } from "@/types/resume";
-import { getMockResume } from "@/libs/mock-data";
 import { toast } from "react-hot-toast";
 
 export interface UseResumeReturn {
@@ -15,13 +14,16 @@ export interface UseResumeReturn {
   resume: Resume | null;
   
   // 操作
+  fetchResume: () => Promise<void>;
   updateResume: (data: ResumeFormData) => Promise<void>;
+  publishResume: (isPublic?: boolean, slug?: string) => Promise<void>;
   
   // 計算
   completeness: number;
   
   // 狀態
   isLoading: boolean;
+  isUpdating: boolean;
 }
 
 /**
@@ -90,36 +92,76 @@ export function calculateCompleteness(resume: Resume | null): number {
 
 export function useResume(): UseResumeReturn {
   // 初始數據
-  const [resume, setResume] = useState<Resume | null>(() => getMockResume());
-  const [isLoading, setIsLoading] = useState(false);
+  const [resume, setResume] = useState<Resume | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // 計算完整度
   const completeness = useMemo(() => {
     return calculateCompleteness(resume);
   }, [resume]);
   
-  // 更新履歷
-  const updateResume = useCallback(async (data: ResumeFormData) => {
+  // 從 API 取得履歷
+  const fetchResume = useCallback(async () => {
     setIsLoading(true);
     
     try {
-      // 模擬 API 延遲
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await fetch('/api/resumes');
       
-      if (!resume) {
-        throw new Error("履歷書が見つかりません");
+      if (!response.ok) {
+        if (response.status === 401) {
+          // 未登入
+          setResume(null);
+          return;
+        }
+        throw new Error('Failed to fetch resume');
       }
       
-      // 更新數據
-      const updatedResume: Resume = {
-        ...resume,
-        ...data,
-        updated_at: new Date().toISOString(),
-      };
+      const { data } = await response.json();
       
-      // 重新計算完整度
-      updatedResume.completeness = calculateCompleteness(updatedResume);
+      // 取得第一個 resume (主要履歷)
+      if (data && data.length > 0) {
+        setResume(data[0]);
+      } else {
+        setResume(null);
+      }
+    } catch (error) {
+      console.error("[useResume] Fetch error:", error);
+      toast.error("履歴書の取得に失敗しました");
+      setResume(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // 初始化時取得履歷
+  useEffect(() => {
+    fetchResume();
+  }, [fetchResume]);
+  
+  // 更新履歷
+  const updateResume = useCallback(async (data: ResumeFormData) => {
+    if (!resume) {
+      toast.error("履歴書が見つかりません");
+      return;
+    }
+    
+    setIsUpdating(true);
+    
+    try {
+      const response = await fetch(`/api/resumes/${resume.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
       
+      if (!response.ok) {
+        throw new Error('Failed to update resume');
+      }
+      
+      const { data: updatedResume } = await response.json();
       setResume(updatedResume);
       toast.success("履歴書を保存しました");
     } catch (error) {
@@ -127,15 +169,70 @@ export function useResume(): UseResumeReturn {
       toast.error("保存に失敗しました");
       throw error;
     } finally {
-      setIsLoading(false);
+      setIsUpdating(false);
+    }
+  }, [resume]);
+  
+  // 發布履歷
+  const publishResume = useCallback(async (isPublic = false, slug?: string) => {
+    if (!resume) {
+      toast.error("履歴書が見つかりません");
+      return;
+    }
+    
+    setIsUpdating(true);
+    
+    try {
+      const response = await fetch(`/api/resumes/${resume.id}/publish`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_public: isPublic,
+          public_url_slug: slug,
+        }),
+      });
+      
+      if (!response.ok) {
+        const { error } = await response.json();
+        throw new Error(error || 'Failed to publish resume');
+      }
+      
+      const { message, data } = await response.json();
+      
+      // 如果是公開發布,顯示公開 URL
+      if (isPublic && data?.public_url_slug) {
+        const publicUrl = `${window.location.origin}/r/${data.public_url_slug}`;
+        toast.success(
+          `履歴書を公開しました！\nURL: ${publicUrl}`,
+          { duration: 8000 }
+        );
+        
+        // 可選: 自動複製到剪貼簿
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(publicUrl).catch(() => {});
+        }
+      } else {
+        toast.success(message || "履歴書を公開しました");
+      }
+    } catch (error) {
+      console.error("[useResume] Publish error:", error);
+      toast.error(error instanceof Error ? error.message : "公開に失敗しました");
+      throw error;
+    } finally {
+      setIsUpdating(false);
     }
   }, [resume]);
   
   return {
     resume,
+    fetchResume,
     updateResume,
+    publishResume,
     completeness,
     isLoading,
+    isUpdating,
   };
 }
 

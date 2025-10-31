@@ -69,7 +69,7 @@ export default function ResumeWorkExperience({ resume }: ResumeWorkExperiencePro
                 </div>
                 
                 {/* 職務内容 */}
-                {pos.description && (
+                {pos.description?.trim() && (
                   <div className="mb-3">
                     <p className="text-sm text-base-content/80 leading-relaxed">
                       {pos.description}

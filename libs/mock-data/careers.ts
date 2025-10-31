@@ -3,9 +3,39 @@
  * 
  * 代表未來的 careers 資料表
  * 包含所有職業履歷相關的完整數據結構
+ * 
+ * Mock User UUID: 550e8400-e29b-41d4-a716-446655440000
+ * (與 Applications/Resume 使用同一測試用戶)
+ * 
+ * 注意: Careers 與 Resume 的關係
+ * - Careers: 內部職涯記錄，包含完整薪資歷史
+ * - Resume: 對外展示用履歷，從 Careers 或手動輸入生成
+ * 
+ * ===== 薪資單位使用規則 =====
+ * Careers 表中的薪資欄位統一使用「k」(千円)為單位:
+ * 
+ * 1. offerSalary.salaryBreakdown:
+ *    - salary: 8000 = 8000千円 = 800万円 = 8,000,000円
+ *    - salary: 2000 = 2000千円 = 200万円 = 2,000,000円
+ * 
+ * 2. salaryHistory[].salaryBreakdown:
+ *    - salary: 8800 = 8800千円 = 880万円 = 8,800,000円
+ * 
+ * 轉換關係:
+ * - 1k = 1,000円 (千円)
+ * - 10k = 1万円
+ * - 100k = 10万円
+ * - 1000k = 100万円
+ * - 8000k = 800万円
+ * 
+ * 注意: 與 Applications 表不同，Applications 直接使用「万円」為單位
+ *       例如: Careers 的 8000k = Applications 的 800万円
  */
 
 import type { Career } from "@/types/career";
+
+// Mock User ID (與其他 mock data 統一)
+export const MOCK_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
 
 export const MOCK_CAREERS_FULL: Career[] = [
   // ===========================================

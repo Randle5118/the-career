@@ -8,13 +8,19 @@
  * 4. 避免重複代碼
  * 
  * 每個 mock 數據代表一個未來需要處理的資料庫表
+ * 
+ * Mock User ID: 550e8400-e29b-41d4-a716-446655440000
+ * 所有 mock 數據統一使用此 UUID 作為測試用戶 ID
  */
 
 // 導入所有 mock 數據
-import { MOCK_CAREERS_FULL } from "./careers";
-import { MOCK_APPLICATIONS_FULL } from "./applications";
-import { MOCK_SIDE_JOBS, SIDE_JOBS_STATS } from "./side-jobs";
-import { MOCK_RESUME } from "./resumes";
+import { MOCK_CAREERS_FULL, MOCK_USER_ID as CAREERS_USER_ID } from "./careers";
+import { MOCK_APPLICATIONS_FULL, MOCK_USER_ID as APPLICATIONS_USER_ID } from "./applications";
+import { MOCK_SIDE_JOBS, SIDE_JOBS_STATS, MOCK_USER_ID as SIDE_JOBS_USER_ID } from "./side-jobs";
+import { MOCK_RESUME, MOCK_USER_ID as RESUME_USER_ID } from "./resumes";
+
+// 統一的 Mock User ID (確保所有文件使用相同的 ID)
+export const MOCK_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
 
 // 導出數據
 export { MOCK_CAREERS_FULL } from "./careers";
@@ -55,14 +61,17 @@ export const getMockSideJobsByStatus = (status: "current" | "left") =>
   MOCK_SIDE_JOBS.filter(job => job.status === status);
 
 // 根據用戶 ID 篩選
-export const getMockCareersByUserId = (userId: string) =>
-  MOCK_CAREERS_FULL.filter(career => true); // 目前所有 mock 數據都是同一用戶
+export const getMockCareersByUserId = (userId: string = MOCK_USER_ID) =>
+  MOCK_CAREERS_FULL; // 目前所有 mock 數據都是同一用戶 (550e8400-e29b-41d4-a716-446655440000)
 
-export const getMockApplicationsByUserId = (userId: string) =>
+export const getMockApplicationsByUserId = (userId: string = MOCK_USER_ID) =>
   MOCK_APPLICATIONS_FULL.filter(app => app.userId === userId);
 
-export const getMockSideJobsByUserId = (userId: string) =>
-  MOCK_SIDE_JOBS.filter(job => true); // 目前所有 mock 數據都是同一用戶
+export const getMockSideJobsByUserId = (userId: string = MOCK_USER_ID) =>
+  MOCK_SIDE_JOBS; // 目前所有 mock 數據都是同一用戶 (550e8400-e29b-41d4-a716-446655440000)
+
+export const getMockResumeByUserId = (userId: string = MOCK_USER_ID) =>
+  MOCK_RESUME; // 目前只有一個用戶的履歷
 
 // 搜索功能
 export const searchMockCareers = (query: string) =>

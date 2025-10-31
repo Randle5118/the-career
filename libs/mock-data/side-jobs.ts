@@ -3,9 +3,22 @@
  * 
  * 代表副業/兼職相關的數據結構
  * 與主業 careers 分開管理
+ * 
+ * Mock User UUID: 550e8400-e29b-41d4-a716-446655440000
+ * (與 Applications/Careers/Resume 使用同一測試用戶)
+ * 
+ * ===== 薪資單位使用規則 =====
+ * Side Jobs 使用與 Careers 相同的薪資單位「k」(千円):
+ * - salary: 1200 = 1200千円 = 120万円
+ * - salary: 600 = 600千円 = 60万円
+ * 
+ * 詳細轉換關係請參考 careers.ts 的說明
  */
 
 import type { Career } from "@/types/career";
+
+// Mock User ID (與其他 mock data 統一)
+export const MOCK_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
 
 export const MOCK_SIDE_JOBS: Career[] = [
   // ===========================================

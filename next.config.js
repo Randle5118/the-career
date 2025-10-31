@@ -35,6 +35,32 @@ const nextConfig = {
       );
     }
 
+    // PDF.js configuration - resolve canvas and fs for browser
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+      fs: false,
+    };
+
+    // Fallback for Node.js modules in browser
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      canvas: false,
+      fs: false,
+      path: false,
+      stream: false,
+      util: false,
+    };
+
+    // Handle PDF.js worker
+    config.module.rules.push({
+      test: /pdf\.worker\.(min\.)?js/,
+      type: 'asset/resource',
+      generator: {
+        filename: 'static/worker/[hash][ext][query]',
+      },
+    });
+
     return config;
   },
 };
