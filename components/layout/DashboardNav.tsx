@@ -10,7 +10,7 @@ import apiClient from "@/libs/api";
 import logo from "@/app/icon.png";
 import config from "@/config";
 import { toast } from "react-hot-toast";
-import { Home, ClipboardList, Menu, X, CreditCard, LogOut, ListCheck, Calendar, Briefcase, BarChart, FlaskConical, FileText } from "lucide-react";
+import { Home, ClipboardList, Menu, X, CreditCard, LogOut, ListCheck, Calendar, Briefcase, BarChart, FlaskConical, FileText, TrendingUp } from "lucide-react";
 // import ThemeColorSwitcher from "@/components/ui/ThemeColorSwitcher";
 
 const navLinks = [
@@ -38,6 +38,11 @@ const navLinks = [
     href: "/dashboard/applications",
     label: "応募一覧",
     icon: ClipboardList,
+  },
+  {
+    href: "/dashboard/analysis",
+    label: "応募分析",
+    icon: TrendingUp,
   },
   {
     href: "/dashboard/statuses",

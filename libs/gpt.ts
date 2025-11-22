@@ -1,8 +1,18 @@
 import axios from 'axios';
 
-// Use this if you want to make a call to OpenAI GPT-4 for instance. userId is used to identify the user on openAI side.
+/**
+ * OpenAI Chat Message 類型定義
+ */
+export interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+/**
+ * Use this if you want to make a call to OpenAI GPT-4 for instance. userId is used to identify the user on openAI side.
+ */
 export const sendOpenAi = async (
-  messages: any[], // TODO: type this
+  messages: OpenAIMessage[],
   userId: number,
   max = 100,
   temp = 1

@@ -86,11 +86,9 @@ export default function ApplicationsPage() {
   const handleSave = async (applicationData: ApplicationFormData) => {
     try {
       if (editingApplication) {
-        updateApplication(editingApplication.id, applicationData);
-        toast.success("応募情報を更新しました");
+        await updateApplication(editingApplication.id, applicationData);
       } else {
-        addApplication(applicationData);
-        toast.success("新しい応募を追加しました");
+        await addApplication(applicationData);
       }
       handleClose();
     } catch (error) {

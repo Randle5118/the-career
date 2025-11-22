@@ -178,7 +178,12 @@ export async function POST(req: NextRequest) {
       // Unhandled event type
     }
   } catch (e) {
-    console.error("stripe error: ", e.message);
+    console.error("[Stripe Webhook] Error:", e);
+    // 回傳 500 讓 Stripe 知道處理失敗，會重試
+    return NextResponse.json(
+      { error: "Webhook processing failed" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({});

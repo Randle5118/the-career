@@ -40,7 +40,7 @@ const statusConfig = {
   final_interview: { label: "最終面接", color: "badge-warning" },
   offer: { label: "内定", color: "badge-success" },
   offer_received: { label: "オファー受領", color: "badge-success" },
-  rejected: { label: "不採用", color: "badge-error" },
+  rejected: { label: "終了", color: "badge-error" },
   withdrawn: { label: "辞退", color: "badge-ghost" },
 };
 

@@ -50,16 +50,26 @@ export async function uploadResumePhoto(file: File, userId?: string): Promise<st
   
   // 如果沒有提供 userId,從當前認證用戶獲取
   if (!userId) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("認証が必要です");
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error("[Storage] Auth error:", authError);
+      throw new Error("認証エラーが発生しました。再度ログインしてください。");
     }
+    
+    if (!user) {
+      throw new Error("認証が必要です。ログインしてください。");
+    }
+    
     userId = user.id;
+    console.log("[Storage] Uploading for user:", userId);
   }
   
   // 檔案路徑: {user_id}/profile.jpg
   const fileExt = file.name.split('.').pop() || 'jpg';
   const filePath = `${userId}/profile.${fileExt}`;
+  
+  console.log("[Storage] Uploading to path:", filePath);
   
   // 上傳檔案 (覆蓋舊檔案)
   const { data, error } = await supabase.storage
@@ -71,21 +81,45 @@ export async function uploadResumePhoto(file: File, userId?: string): Promise<st
     });
   
   if (error) {
-    console.error("[Storage] Upload error:", error);
+    console.error("[Storage] Upload error:", {
+      message: error.message,
+      statusCode: error.statusCode,
+      error: error.error,
+      name: error.name,
+      stack: error.stack,
+    });
     
     // 提供更詳細的錯誤訊息
-    if (error.message.includes('row-level security')) {
-      throw new Error("アップロード権限がありません。Storage Policiesを確認してください。");
-    }
-    if (error.message.includes('not found')) {
-      throw new Error("Storageバケットが見つかりません。");
-    }
-    if (error.message.includes('size')) {
-      throw new Error("ファイルサイズが大きすぎます。");
+    if (error.statusCode === '403' || error.message.includes('row-level security') || error.message.includes('RLS')) {
+      console.error("[Storage] RLS Policy violation detected");
+      throw new Error(
+        "アップロード権限がありません。\n" +
+        "Storage Policiesを確認してください。\n" +
+        "詳細: " + error.message
+      );
     }
     
-    throw new Error(`アップロードに失敗しました: ${error.message}`);
+    if (error.statusCode === '401' || error.message.includes('JWT') || error.message.includes('token')) {
+      throw new Error("認証トークンが無効です。再度ログインしてください。");
+    }
+    
+    if (error.message.includes('not found') || error.statusCode === '404') {
+      throw new Error("Storageバケットが見つかりません。バケット名を確認してください。");
+    }
+    
+    if (error.message.includes('size') || error.message.includes('too large')) {
+      throw new Error("ファイルサイズが大きすぎます。5MB以下のファイルを選択してください。");
+    }
+    
+    // 其他錯誤
+    throw new Error(`アップロードに失敗しました: ${error.message || error.error || '不明なエラー'}`);
   }
+  
+  if (!data) {
+    throw new Error("アップロードは完了しましたが、データが取得できませんでした。");
+  }
+  
+  console.log("[Storage] Upload successful:", data.path);
   
   // 取得公開 URL
   const { data: urlData } = supabase.storage

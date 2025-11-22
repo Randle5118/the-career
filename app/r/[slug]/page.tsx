@@ -6,6 +6,7 @@ import {
   User, GraduationCap, Briefcase, Code, Languages as LanguagesIcon,
   FileText
 } from "lucide-react";
+import { Heading } from "@/components/catalyst/heading";
 import ResumeBasicInfo from "@/components/resume/ResumeBasicInfo";
 import ResumeEducation from "@/components/resume/ResumeEducation";
 import ResumeWorkExperience from "@/components/resume/ResumeWorkExperience";
@@ -63,7 +64,7 @@ export default function PublicResumePage({
     fetchResume();
   }, [slug]);
   
-  // Loading 狀態
+  // Loading状態
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -72,14 +73,14 @@ export default function PublicResumePage({
     );
   }
   
-  // 找不到履歷
+  // 履歴書が見つからない
   if (!resume) {
     notFound();
   }
   
-  // Tab 配置
+  // Tab設定
   const tabs = [
-    { id: "basic" as TabId, label: "基本資料", icon: User },
+    { id: "basic" as TabId, label: "基本情報", icon: User },
     { id: "education" as TabId, label: "学歴", icon: GraduationCap },
     { id: "work" as TabId, label: "職務経歴", icon: Briefcase },
     { id: "skills" as TabId, label: "スキル・資格", icon: Code },
@@ -88,48 +89,51 @@ export default function PublicResumePage({
   
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white">
         {/* Header */}
-        <div className="border-b border-zinc-950/10 pb-4 sm:pb-6 dark:border-white/10 mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
-            <h1 className="text-xl sm:text-3xl font-bold text-base-content line-clamp-2">
-              {resume.name_kanji}の履歴書
-            </h1>
+        <div className="flex w-full flex-wrap items-end justify-between gap-4 border-b border-zinc-950/10 pb-6 dark:border-white/10 mb-8">
+          <div>
+            <Heading>{resume.name_kanji}の履歴書</Heading>
+            <p className="mt-2 text-base/6 text-base-content/50 sm:text-sm/6">
+              公開履歴書 • {new Date(resume.published_at).toLocaleDateString('ja-JP')} • Version {resume.version}
+            </p>
           </div>
-          <p className="text-sm text-base-content/50">
-            公開履歴書 • {new Date(resume.published_at).toLocaleDateString('ja-JP')}
-          </p>
-        </div>
-        
-        {/* Tab Navigation - Scrollable on mobile */}
-        <div className="border-b border-base-300 mb-4 sm:mb-6 -mx-4 sm:mx-0">
-          <div className="flex gap-2 sm:gap-4 overflow-x-auto px-4 sm:px-0 scrollbar-hide">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 transition-colors whitespace-nowrap text-sm sm:text-base
-                    ${activeTab === tab.id
-                      ? 'border-primary text-primary font-medium'
-                      : 'border-transparent text-base-content/60 hover:text-base-content hover:border-base-300'
-                    }
-                  `}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.split('・')[0]}</span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            <span className="text-sm text-base-content/60">公開中</span>
           </div>
         </div>
         
-        {/* Content - 使用統一組件 */}
-        <div className="pb-8">
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="border-b border-base-300 -mx-4 sm:mx-0">
+            <div className="flex gap-2 sm:gap-4 overflow-x-auto px-4 sm:px-0 scrollbar-hide">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 transition-colors whitespace-nowrap text-sm sm:text-base
+                      ${activeTab === tab.id
+                        ? 'border-primary text-primary font-medium'
+                        : 'border-transparent text-base-content/60 hover:text-base-content hover:border-base-300'
+                      }
+                    `}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split('・')[0]}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        
+        {/* コンテンツエリア */}
+        <div className="pb-12">
           {activeTab === "basic" && <ResumeBasicInfo resume={resume} />}
           {activeTab === "education" && <ResumeEducation resume={resume} />}
           {activeTab === "work" && <ResumeWorkExperience resume={resume} />}
@@ -138,8 +142,8 @@ export default function PublicResumePage({
         </div>
         
         {/* Footer */}
-        <div className="text-center mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-zinc-950/10 text-base-content/40 text-xs sm:text-sm">
-          <p>Powered by Cafka • v{resume.version}</p>
+        <div className="text-center mt-12 pt-8 border-t border-zinc-950/10 dark:border-white/10 text-base-content/40 text-xs sm:text-sm">
+          <p>Powered by Cafka</p>
         </div>
       </div>
       

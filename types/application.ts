@@ -5,7 +5,7 @@ export type ApplicationStatus =
   | "applied"            // 応募済み - Applied (includes document screening)
   | "interview"          // 面談・面接 - Interview process (casual + formal)
   | "offer"              // 内定 - Offer received
-  | "rejected";          // 応募終了 - Rejected/Withdrawn
+  | "rejected";          // 終了 - Rejected/Withdrawn/Ended
 
 export type EmploymentType = 
   | "full_time"          // 正社員

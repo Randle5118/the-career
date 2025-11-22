@@ -17,15 +17,11 @@ import type { WorkExperience, Position } from "@/types/resume";
  */
 export function convertCareerToPosition(career: Career): Position {
   return {
+    id: crypto.randomUUID(),
+    title: career.position,
     start_date: career.startDate,
     end_date: career.endDate || null,
     is_current: career.status === "current",
-    department: "", // 需手動補充
-    title: career.position,
-    employment_type: getEmploymentTypeLabel(career.employmentType),
-    description: career.notes || "", // 使用 notes 作為初始提示
-    responsibilities: [], // 需手動補充
-    achievements: [], // 需手動補充
   };
 }
 
@@ -47,12 +43,22 @@ export function convertCareersToWorkExperience(
   const firstCareer = sortedCareers[0];
   const lastCareer = sortedCareers[sortedCareers.length - 1];
   
+  // 合併所有 Career 的 notes 作為 description（如果有的話）
+  // 使用換行符號分隔，保留原始格式
+  const description = sortedCareers
+    .map(c => c.notes)
+    .filter(note => note && note.trim())
+    .join('\n\n') || undefined;
+  
   return {
+    id: crypto.randomUUID(),
     company_name: companyName,
     industry: "", // 需手動補充
+    employment_type: getEmploymentTypeLabel(firstCareer.employmentType), // 使用第一個 career 的雇用形態（同一公司應該都一樣）
     start_date: firstCareer.startDate,
     end_date: lastCareer.endDate || null,
     is_current: lastCareer.status === "current",
+    description, // 職務內容 (從 Career notes 合併)
     
     // 將每個 Career 轉換為一個 Position
     positions: sortedCareers.map(career => convertCareerToPosition(career)),
@@ -102,6 +108,7 @@ export function validateWorkExperience(exp: WorkExperience): {
   
   if (!exp.company_name) missingFields.push("会社名");
   if (!exp.industry) missingFields.push("業種");
+  // employment_type 是可選的，不需要驗證
   if (!exp.start_date) missingFields.push("入社年月");
   
   exp.positions.forEach((pos, index) => {

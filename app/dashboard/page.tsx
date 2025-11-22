@@ -7,16 +7,8 @@ import { useApplications } from "@/libs/hooks/useApplications";
 import { Calendar, TrendingUp, Briefcase, Award, FileText, Users, BarChart, Kanban, Building2, DollarSign } from "lucide-react";
 import { MOCK_CAREERS_FULL } from "@/libs/mock-data/careers";
 import { MOCK_SIDE_JOBS } from "@/libs/mock-data/side-jobs";
-import type { Career } from "@/types/career";
-
-const STATUS_LABELS: Record<string, string> = {
-  bookmarked: "ブックマーク",
-  applied: "応募済み",
-  interview: "面接中",
-  offer: "オファー",
-  rejected: "不採用",
-  withdrawn: "辞退",
-};
+import type { Career, SalaryComponent } from "@/types/career";
+import { APPLICATION_STATUS_LABELS } from "@/constants/application";
 
 export default function DashboardPage() {
   const { applications } = useApplications();
@@ -33,9 +25,14 @@ export default function DashboardPage() {
   
   // Career 統計
   const careerStats = useMemo(() => {
+    const currentDate = new Date();
+    
     // 當前薪資 (salary 單位是萬円,需要除以100)
     const latestSalary = currentCareer?.salaryHistory?.[currentCareer.salaryHistory.length - 1];
-    const currentSalary = latestSalary?.salaryBreakdown?.reduce((sum: number, item: any) => sum + (item.salary || 0), 0) / 100 || 0;
+    const currentSalary = latestSalary?.salaryBreakdown?.reduce(
+      (sum: number, item: SalaryComponent) => sum + (item.salary || 0), 
+      0
+    ) / 100 || 0;
     
     // 副業收入
     const sideJobIncome = sideJobs
@@ -53,6 +50,33 @@ export default function DashboardPage() {
       ? Math.floor((new Date().getTime() - new Date(currentCareer.startDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000) * 10) / 10
       : 0;
     
+    // 總勤務年數 (所有正職工作的總年數)
+    const totalYears = careers.reduce((acc, career) => {
+      const start = new Date(career.startDate + "-01");
+      const end = career.endDate ? new Date(career.endDate + "-01") : currentDate;
+      const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+      return acc + months / 12;
+    }, 0);
+    
+    // キャリア歴 (不同職位的數量)
+    const uniquePositions = new Set(careers.map(career => career.position));
+    const jobTypeCount = uniquePositions.size;
+    
+    // 給与變化率
+    let salaryGrowth = 0;
+    const sortedCareers = [...careers].sort((a, b) => 
+      new Date(a.startDate + "-01").getTime() - new Date(b.startDate + "-01").getTime()
+    );
+    if (sortedCareers.length >= 2) {
+      const firstCareer = sortedCareers[0];
+      const lastCareer = sortedCareers[sortedCareers.length - 1];
+      const firstSalary = firstCareer.salaryHistory?.[0]?.salaryBreakdown?.reduce((sum, item) => sum + (item.salary || 0), 0) / 100 || 0;
+      const lastSalary = lastCareer.salaryHistory?.[lastCareer.salaryHistory.length - 1]?.salaryBreakdown?.reduce((sum, item) => sum + (item.salary || 0), 0) / 100 || 0;
+      if (firstSalary > 0) {
+        salaryGrowth = Math.round(((lastSalary - firstSalary) / firstSalary) * 100);
+      }
+    }
+    
     return {
       currentSalary,
       sideJobIncome,
@@ -60,6 +84,9 @@ export default function DashboardPage() {
       careerYears,
       totalCareers: careers.length,
       currentSideJobs: sideJobs.filter(j => j.status === "current").length,
+      totalYears: Math.round(totalYears * 10) / 10,
+      jobTypeCount,
+      salaryGrowth,
     };
   }, [currentCareer, careers, sideJobs]);
 
@@ -136,7 +163,7 @@ export default function DashboardPage() {
         {/* Career Overview - 職涯狀態 */}
         {currentCareer && (
           <div className="bg-base-100 border border-base-300 rounded-lg p-6 mb-8">
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
                 <Building2 className="w-8 h-8 text-base-content/40" />
                 <div>
@@ -149,6 +176,43 @@ export default function DashboardPage() {
               </Link>
             </div>
             
+            {/* 職涯統計區塊 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+              {/* 左側: 給与變化比率 */}
+              <div className="bg-gradient-to-br from-success/10 to-success/5 border border-success/20 rounded-lg p-6">
+                <div className="text-xs text-base-content/60 mb-2">給与変化比率</div>
+                <div className={`text-4xl font-bold mb-1 ${careerStats.salaryGrowth >= 0 ? 'text-success' : 'text-error'}`}>
+                  {careerStats.salaryGrowth >= 0 ? '+' : ''}{careerStats.salaryGrowth}%
+                </div>
+                <Link href="/dashboard/my-career" className="text-xs text-base-content/50 hover:text-primary transition-colors inline-flex items-center gap-1">
+                  詳細を見る →
+                </Link>
+              </div>
+
+              {/* 中間: 總勤務年數 */}
+              <div className="bg-base-50 border border-primary/20 rounded-lg p-6">
+                <div className="text-xs text-base-content/60 mb-2">総勤務年数</div>
+                <div className="text-4xl font-bold text-base-content mb-1">
+                  {careerStats.totalYears}<span className="text-base-content/60 text-lg ml-1">年</span>
+                </div>
+                <div className="text-xs text-base-content/50">
+                  全{careerStats.totalCareers}社での累計
+                </div>
+              </div>
+
+              {/* 右側: キャリア歴 */}
+              <div className="bg-base-50 border border-base-300 rounded-lg p-6">
+                <div className="text-xs text-base-content/60 mb-2">キャリア歴</div>
+                <div className="text-4xl font-bold text-base-content mb-1">
+                  {careerStats.jobTypeCount}<span className="text-base-content/60 text-lg ml-1">種</span>
+                </div>
+                <div className="text-xs text-base-content/50">
+                  異なる職種の経験
+                </div>
+              </div>
+            </div>
+            
+            {/* 薪資資訊 */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-base-50 border border-base-200 rounded-lg p-4">
                 <div className="text-xs text-base-content/60 mb-1">現在の年収</div>
@@ -395,14 +459,8 @@ export default function DashboardPage() {
                     rejected: "border-l-error",
                     withdrawn: "border-l-base-300",
                   };
-                  const statusLabels: Record<string, string> = {
-                    bookmarked: "ブックマーク",
-                    applied: "応募済み",
-                    interview: "面接中",
-                    offer: "内定",
-                    rejected: "不採用",
-                    withdrawn: "辞退",
-                  };
+                  // 使用統一常數
+                  const statusLabels = APPLICATION_STATUS_LABELS;
                   
                   return (
                     <Link

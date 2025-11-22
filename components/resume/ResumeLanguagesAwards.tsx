@@ -1,5 +1,5 @@
 /**
- * 履歷書語言・獎項展示組件
+ * 履歴書言語・受賞歴表示コンポーネント
  */
 
 import type { Resume } from "@/types/resume";

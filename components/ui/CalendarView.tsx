@@ -91,7 +91,7 @@ export default function CalendarView({ applications, onViewDetail, onEdit }: Cal
     final_interview: { label: "最終面接", color: "bg-orange-100 text-orange-800" },
     offer: { label: "内定", color: "bg-green-100 text-green-800" },
     offer_received: { label: "オファー受領", color: "bg-green-100 text-green-800" },
-    rejected: { label: "不採用", color: "bg-red-100 text-red-800" },
+    rejected: { label: "終了", color: "bg-red-100 text-red-800" },
     withdrawn: { label: "辞退", color: "bg-gray-100 text-gray-800" },
   };
 

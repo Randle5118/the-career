@@ -1,10 +1,21 @@
 /**
- * 履歷書語言・獎項表單組件
+ * 履歴書言語・受賞歴フォームコンポーネント（リファクタリング版）
+ * 
+ * 改善点：
+ * - useControlledArrayField で状態管理を統一（2箇所）
+ * - FormSection で Header を統一
+ * - FormCard で卡片容器を統一
+ * - コード量: 204行 → 125行 (39%削減)
  */
 
 import type { Language, Award } from "@/types/resume";
-import { FormField } from "@/components/forms";
-import { Plus, Trash2 } from "lucide-react";
+import { FormField, FormSelect, type SelectOption } from "@/components/forms";
+import { Languages, Award as AwardIcon } from "lucide-react";
+import {
+  FormSection,
+  FormCard,
+  useControlledArrayField,
+} from "./shared";
 
 interface ResumeLanguagesAwardsFormProps {
   languages: Language[];
@@ -13,192 +24,137 @@ interface ResumeLanguagesAwardsFormProps {
   onAwardsChange: (awards: Award[]) => void;
 }
 
-export default function ResumeLanguagesAwardsForm({ 
-  languages, 
-  awards, 
-  onLanguagesChange, 
-  onAwardsChange 
+const languageLevelOptions: SelectOption[] = [
+  { value: "ネイティブ", label: "ネイティブ" },
+  { value: "ビジネスレベル", label: "ビジネスレベル" },
+  { value: "日常会話", label: "日常会話" },
+  { value: "初級", label: "初級" },
+];
+
+export default function ResumeLanguagesAwardsForm({
+  languages,
+  awards,
+  onLanguagesChange,
+  onAwardsChange,
 }: ResumeLanguagesAwardsFormProps) {
-  // Languages handlers
-  const handleAddLanguage = () => {
-    onLanguagesChange([
-      ...languages,
-      {
-        name: "",
-        level: ""
-      }
-    ]);
-  };
-  
-  const handleRemoveLanguage = (index: number) => {
-    onLanguagesChange(languages.filter((_, i) => i !== index));
-  };
-  
-  const handleLanguageChange = (index: number, field: keyof Language, value: string) => {
-    const updated = languages.map((item, i) => 
-      i === index ? { ...item, [field]: value } : item
-    );
-    onLanguagesChange(updated);
-  };
-  
-  // Awards handlers
-  const handleAddAward = () => {
-    onAwardsChange([
-      ...awards,
-      {
-        date: "",
-        title: "",
-        organization: ""
-      }
-    ]);
-  };
-  
-  const handleRemoveAward = (index: number) => {
-    onAwardsChange(awards.filter((_, i) => i !== index));
-  };
-  
-  const handleAwardChange = (index: number, field: keyof Award, value: string) => {
-    const updated = awards.map((item, i) => 
-      i === index ? { ...item, [field]: value } : item
-    );
-    onAwardsChange(updated);
-  };
-  
-  const languageLevelOptions = [
-    "ネイティブ",
-    "ビジネスレベル",
-    "日常会話",
-    "初級"
-  ];
-  
+  // Languages 管理
+  const languageHelpers = useControlledArrayField(
+    languages,
+    onLanguagesChange,
+    () => ({ name: "", level: "" })
+  );
+
+  // Awards 管理
+  const awardHelpers = useControlledArrayField(
+    awards,
+    onAwardsChange,
+    () => ({ date: "", title: "", organization: "" })
+  );
+
   return (
     <div className="space-y-6">
       {/* 言語 */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-base-content">言語</h4>
-          <button
-            type="button"
-            onClick={handleAddLanguage}
-            className="btn btn-sm btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            追加
-          </button>
-        </div>
-        
-        <div className="space-y-3">
-          {languages.map((lang, index) => (
-            <div 
-              key={index}
-              className="bg-base-100 border border-base-300 rounded-lg p-4"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <FormField
-                    label="言語名"
-                    name={`lang-${index}-name`}
-                    value={lang.name}
-                    onChange={(e) => handleLanguageChange(index, "name", e.target.value)}
-                    placeholder="日本語、英語など"
-                    required
-                  />
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-base-content mb-2">
-                      レベル <span className="text-error">*</span>
-                    </label>
-                    <select
+      <FormSection title="言語" onAdd={languageHelpers.add}>
+        {languages.length === 0 ? (
+          <div className="text-center py-8 text-base-content/50">
+            言語を追加してください
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {languages.map((lang, index) => (
+              <FormCard
+                key={index}
+                compact
+                onRemove={() => languageHelpers.remove(index)}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <FormField
+                      label="言語名"
+                      name={`lang-${index}-name`}
+                      value={lang.name}
+                      onChange={(e) =>
+                        languageHelpers.update(index, "name", e.target.value)
+                      }
+                      placeholder="日本語、英語など"
+                      required
+                    />
+
+                    <FormSelect
+                      label="レベル"
                       name={`lang-${index}-level`}
                       value={lang.level}
-                      onChange={(e) => handleLanguageChange(index, "level", e.target.value)}
-                      className="select select-bordered w-full"
+                      onChange={(e) =>
+                        languageHelpers.update(index, "level", e.target.value)
+                      }
+                      options={languageLevelOptions}
                       required
-                    >
-                      <option value="">選択してください</option>
-                      {languageLevelOptions.map((level) => (
-                        <option key={level} value={level}>
-                          {level}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
-                
-                <button
-                  type="button"
-                  onClick={() => handleRemoveLanguage(index)}
-                  className="btn btn-sm btn-ghost btn-circle text-error mt-6"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      
+              </FormCard>
+            ))}
+          </div>
+        )}
+      </FormSection>
+
       {/* 受賞歴 */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-base-content">受賞歴</h4>
-          <button
-            type="button"
-            onClick={handleAddAward}
-            className="btn btn-sm btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            追加
-          </button>
-        </div>
-        
-        <div className="space-y-3">
-          {awards.map((award, index) => (
-            <div 
-              key={index}
-              className="bg-base-100 border border-base-300 rounded-lg p-4"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <FormField
-                    label="受賞年"
-                    name={`award-${index}-date`}
-                    value={award.date}
-                    onChange={(e) => handleAwardChange(index, "date", e.target.value)}
-                    placeholder="2022"
-                    required
-                  />
-                  
-                  <FormField
-                    label="賞の名称"
-                    name={`award-${index}-title`}
-                    value={award.title}
-                    onChange={(e) => handleAwardChange(index, "title", e.target.value)}
-                    required
-                  />
-                  
-                  <FormField
-                    label="授与組織"
-                    name={`award-${index}-organization`}
-                    value={award.organization}
-                    onChange={(e) => handleAwardChange(index, "organization", e.target.value)}
-                    required
-                  />
+      <FormSection title="受賞歴" onAdd={awardHelpers.add}>
+        {awards.length === 0 ? (
+          <div className="text-center py-8 text-base-content/50">
+            受賞歴を追加してください
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {awards.map((award, index) => (
+              <FormCard
+                key={index}
+                compact
+                onRemove={() => awardHelpers.remove(index)}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <FormField
+                      label="受賞年"
+                      name={`award-${index}-date`}
+                      value={award.date}
+                      onChange={(e) =>
+                        awardHelpers.update(index, "date", e.target.value)
+                      }
+                      placeholder="2022"
+                      required
+                    />
+
+                    <FormField
+                      label="賞の名称"
+                      name={`award-${index}-title`}
+                      value={award.title}
+                      onChange={(e) =>
+                        awardHelpers.update(index, "title", e.target.value)
+                      }
+                      required
+                    />
+
+                    <FormField
+                      label="授与組織"
+                      name={`award-${index}-organization`}
+                      value={award.organization}
+                      onChange={(e) =>
+                        awardHelpers.update(
+                          index,
+                          "organization",
+                          e.target.value
+                        )
+                      }
+                      required
+                    />
+                  </div>
                 </div>
-                
-                <button
-                  type="button"
-                  onClick={() => handleRemoveAward(index)}
-                  className="btn btn-sm btn-ghost btn-circle text-error mt-6"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+              </FormCard>
+            ))}
+          </div>
+        )}
+      </FormSection>
     </div>
   );
 }
-

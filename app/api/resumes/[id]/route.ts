@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/libs/supabase/server";
+import { handleApiErrorResponse, handleSupabaseError } from "@/libs/api-helpers";
+import { ResumeFormDataSchema } from "@/libs/validations/resume";
+import { cleanResumeUpdateData } from "@/libs/api-helpers";
+
+// UUID 驗證 regex
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * GET /api/resumes/[id]
- * 取得單一 resume
+ * 取得特定 ID 的履歷
  */
 export async function GET(
   req: NextRequest,
@@ -11,9 +17,17 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    
+    // 驗證 UUID 格式
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { error: "無効なIDです" },
+        { status: 404 }
+      );
+    }
+
     const supabase = await createClient();
     
-    // 認證檢查
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -25,7 +39,6 @@ export async function GET(
       );
     }
 
-    // 查詢 resume (RLS 會確保只能查詢自己的)
     const { data: resume, error } = await supabase
       .from("resumes")
       .select("*")
@@ -33,26 +46,25 @@ export async function GET(
       .eq("user_id", user.id)
       .single();
 
-    if (error || !resume) {
-      return NextResponse.json(
-        { error: "履歴書が見つかりません" },
-        { status: 404 }
-      );
+    if (error) {
+      if (error.code === "PGRST116") {
+        return NextResponse.json(
+          { error: "履歴書が見つかりません" },
+          { status: 404 }
+        );
+      }
+      throw handleSupabaseError(error);
     }
 
     return NextResponse.json({ data: resume });
   } catch (error) {
-    console.error("[API] Get resume error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
 
 /**
  * PUT /api/resumes/[id]
- * 更新 resume
+ * 更新特定 ID 的履歷
  */
 export async function PUT(
   req: NextRequest,
@@ -60,9 +72,17 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    
+    // 驗證 UUID 格式
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { error: "無効なIDです" },
+        { status: 404 }
+      );
+    }
+
     const supabase = await createClient();
     
-    // 認證檢查
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -74,48 +94,38 @@ export async function PUT(
       );
     }
 
-    // 取得 request body
     const body = await req.json();
+    const validatedData = ResumeFormDataSchema.parse(body);
+    const cleanedData = cleanResumeUpdateData(validatedData);
 
-    // 更新 resume (RLS 會確保只能更新自己的)
-    const { data: updatedResume, error } = await supabase
+    const { data: resume, error } = await supabase
       .from("resumes")
-      .update(body)
+      .update({
+        ...cleanedData,
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", id)
       .eq("user_id", user.id)
       .select()
       .single();
 
     if (error) {
-      console.error("[API] Update resume error:", error);
-      
-      // 檢查是否是權限問題
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "履歴書が見つかりません" },
-          { status: 404 }
-        );
-      }
-      
-      return NextResponse.json(
-        { error: "履歴書の更新に失敗しました" },
-        { status: 500 }
-      );
+      throw handleSupabaseError(error);
     }
 
-    return NextResponse.json({ data: updatedResume });
+    return NextResponse.json({
+      success: true,
+      data: resume,
+      message: "履歴書を更新しました"
+    });
   } catch (error) {
-    console.error("[API] Update resume error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
 
 /**
  * DELETE /api/resumes/[id]
- * 刪除 resume
+ * 刪除特定 ID 的履歷
  */
 export async function DELETE(
   req: NextRequest,
@@ -123,9 +133,17 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+
+    // 驗證 UUID 格式
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { error: "無効なIDです" },
+        { status: 404 }
+      );
+    }
+
     const supabase = await createClient();
     
-    // 認證檢查
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -137,7 +155,6 @@ export async function DELETE(
       );
     }
 
-    // 刪除 resume (RLS 會確保只能刪除自己的)
     const { error } = await supabase
       .from("resumes")
       .delete()
@@ -145,20 +162,14 @@ export async function DELETE(
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("[API] Delete resume error:", error);
-      return NextResponse.json(
-        { error: "履歴書の削除に失敗しました" },
-        { status: 500 }
-      );
+      throw handleSupabaseError(error);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: "履歴書を削除しました"
+    });
   } catch (error) {
-    console.error("[API] Delete resume error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
-

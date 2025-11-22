@@ -18,7 +18,7 @@ import KanbanCard from "@/components/cards/KanbanCard";
 
 interface KanbanViewProps {
   applications: Application[];
-  onUpdateStatus: (id: string, newStatus: ApplicationStatus) => void;
+  onUpdateStatus: (id: string, newStatus: ApplicationStatus) => void | Promise<void>;
   onViewDetail?: (application: Application) => void;
   onEdit: (application: Application) => void;
 }
@@ -46,7 +46,7 @@ const columns = [
   },
   {
     id: "rejected",
-    title: "応募終了",
+    title: "終了",
     color: "bg-error/20",
   },
 ];
@@ -83,7 +83,7 @@ export default function KanbanView({
     setOverId(over ? (over.id as string) : null);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (!over) {
@@ -114,7 +114,7 @@ export default function KanbanView({
     if (targetStatus) {
       const activeApplication = applications.find((app) => app.id === activeId);
       if (activeApplication && activeApplication.status !== targetStatus) {
-        onUpdateStatus(activeId, targetStatus as ApplicationStatus);
+        await onUpdateStatus(activeId, targetStatus as ApplicationStatus);
       }
     }
 

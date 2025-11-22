@@ -1,5 +1,5 @@
 /**
- * 履歷書求職偏好展示組件
+ * 履歴書希望条件表示コンポーネント
  */
 
 import type { Resume } from "@/types/resume";

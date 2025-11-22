@@ -16,7 +16,7 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // 當 currentPhotoUrl 變更時更新預覽
+  // currentPhotoUrlが変更されたときにプレビューを更新
   useEffect(() => {
     setPreviewUrl(currentPhotoUrl);
   }, [currentPhotoUrl]);
@@ -25,7 +25,7 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // 驗證檔案
+    // ファイルを検証
     const validation = validateImageFile(file);
     if (!validation.valid) {
       toast.error(validation.error || "無効なファイルです");
@@ -33,17 +33,17 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
     }
     
     try {
-      // 壓縮圖片 (減少檔案大小)
+      // 画像を圧縮（ファイルサイズを削減）
       const compressedFile = await compressImage(file, 800, 0.8);
       
-      // 設定預覽 (使用 object URL)
+      // プレビューを設定（object URLを使用）
       const objectUrl = URL.createObjectURL(compressedFile);
       setPreviewUrl(objectUrl);
       
-      // 保存檔案,等待表單提交時上傳
+      // ファイルを保存し、フォーム送信時にアップロードを待機
       setSelectedFile(compressedFile);
       
-      // 通知父組件有檔案選擇
+      // 親コンポーネントにファイル選択を通知
       onPhotoChange(compressedFile);
       
       toast.success("写真を選択しました。保存してアップロードします。");
@@ -51,10 +51,10 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
       console.error("[PhotoUpload] Error:", error);
       toast.error("画像の処理に失敗しました");
       
-      // 恢復原本的預覽
+      // 元のプレビューを復元
       setPreviewUrl(currentPhotoUrl);
     } finally {
-      // 清空 input 以允許重新選擇同一檔案
+      // 同じファイルを再選択できるようにinputをクリア
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -64,11 +64,11 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
   const handleDelete = () => {
     if (!confirm("写真を削除しますか？")) return;
     
-    // 清除預覽和選擇的檔案
+    // プレビューと選択したファイルをクリア
     setPreviewUrl(undefined);
     setSelectedFile(null);
     
-    // 通知父組件清除照片
+    // 親コンポーネントに写真削除を通知
     onPhotoChange(null);
     
     toast.success("写真を削除しました。保存して反映します。");
@@ -80,7 +80,7 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
   
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      {/* 照片預覽區 */}
+      {/* 写真プレビューエリア */}
       <div className="relative">
         {previewUrl ? (
           <div className="relative group">
@@ -90,7 +90,7 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
               className="w-32 h-32 rounded-full object-cover border-4 border-base-300"
             />
             
-            {/* Hover 遮罩 */}
+            {/* Hover時のオーバーレイ */}
             <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
                 type="button"
@@ -102,7 +102,7 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
               </button>
             </div>
             
-            {/* 刪除按鈕 */}
+            {/* 削除ボタン */}
             <button
               type="button"
               onClick={handleDelete}
@@ -125,7 +125,7 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
         )}
       </div>
       
-      {/* 隱藏的 file input */}
+      {/* 非表示のfile input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -134,7 +134,7 @@ export default function PhotoUpload({ currentPhotoUrl, onPhotoChange, className 
         className="hidden"
       />
       
-      {/* 說明文字 */}
+      {/* 説明テキスト */}
       <div className="text-center">
         <button
           type="button"

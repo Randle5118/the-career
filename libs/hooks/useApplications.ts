@@ -5,9 +5,12 @@
  * 所有 Application 相關頁面都應該使用這個 Hook
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { Application, ApplicationFormData, ApplicationStatus } from "@/types/application";
-import { getMockApplications } from "@/libs/mock-data";
+import { createClient } from "@/libs/supabase/client";
+import { handleError } from "@/libs/utils/error-handler";
+import { transformApplicationFromDB, transformApplicationToDB } from "@/libs/utils/transformers";
+import { APPLICATION_ERRORS } from "@/constants/errors";
 import { toast } from "react-hot-toast";
 
 export interface UseApplicationsOptions {
@@ -47,21 +50,87 @@ export function useApplications(options: UseApplicationsOptions = {}): UseApplic
   const { initialFilter = {} } = options;
   
   // 初始數據
-  const [applications, setApplications] = useState<Application[]>(() => {
-    const mockData = getMockApplications();
-    // 如果指定了 userId，則篩選
-    if (initialFilter.userId) {
-      return mockData.filter(app => app.userId === initialFilter.userId);
-    }
-    return mockData;
-  });
+  const [applications, setApplications] = useState<Application[]>([]);
   
   // 篩選狀態
   const [filterStatus, setFilterStatus] = useState<ApplicationStatus | "all">(
     initialFilter.status || "all"
   );
   const [searchQuery, setSearchQuery] = useState(initialFilter.searchQuery || "");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Supabase client
+  const supabase = createClient();
+
+  // 從資料庫獲取應募資料
+  const fetchApplications = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      // 獲取當前用戶
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        handleError(userError, {
+          feature: 'user',
+          action: 'fetch',
+        });
+        return;
+      }
+
+      if (!user) {
+        setApplications([]);
+        return;
+      }
+
+      // 獲取應募資料
+      let query = supabase
+        .from("applications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      // 如果有指定 userId 過濾（雖然 RLS 已經保證只能看到自己的資料）
+      if (initialFilter.userId) {
+        query = query.eq("user_id", initialFilter.userId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        handleError(error, {
+          feature: 'application',
+          action: 'fetch',
+        }, {
+          customMessage: APPLICATION_ERRORS.FETCH_FAILED,
+        });
+        return;
+      }
+
+      // 轉換資料庫欄位名稱為 camelCase
+      const transformedData: Application[] = (data || []).map(row =>
+        transformApplicationFromDB(row as Parameters<typeof transformApplicationFromDB>[0])
+      );
+
+      setApplications(transformedData);
+    } catch (error) {
+      handleError(error, {
+        feature: 'application',
+        action: 'fetch',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [supabase, initialFilter.userId]);
+
+  // 初始載入 - 使用 useRef 避免無限循環
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      fetchApplications();
+    }
+  }, []); // 只在 mount 時執行一次
 
   // 篩選後的數據
   const filteredApplications = useMemo(() => {
@@ -107,86 +176,170 @@ export function useApplications(options: UseApplicationsOptions = {}): UseApplic
   }, [applications]);
 
   // 新增應募
-  const addApplication = useCallback((data: ApplicationFormData) => {
-    setIsLoading(true);
+  const addApplication = useCallback(async (data: ApplicationFormData) => {
     try {
-      const newApplication: Application = {
-        id: `app-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        userId: "user-001", // TODO: 從認證系統獲取
-        ...data,
-        desiredSalary: typeof data.desiredSalary === 'string' 
-          ? parseFloat(data.desiredSalary) || 0 
-          : data.desiredSalary || 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      setIsLoading(true);
       
-      setApplications(prev => [...prev, newApplication]);
+      // 獲取當前用戶
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast.error("ユーザー情報の取得に失敗しました");
+        return;
+      }
+
+      // 準備資料 - 使用統一的轉換函數
+      const insertData = {
+        user_id: user.id,
+        ...transformApplicationToDB(data),
+      };
+
+      const { error } = await supabase
+        .from("applications")
+        .insert(insertData);
+
+      if (error) {
+        handleError(error, {
+          feature: 'application',
+          action: 'create',
+        }, {
+          customMessage: APPLICATION_ERRORS.CREATE_FAILED,
+        });
+        return;
+      }
+
       toast.success("新しい応募を追加しました");
+      
+      // 重新獲取資料
+      await fetchApplications();
     } catch (error) {
-      toast.error("応募の追加に失敗しました");
-      console.error("Add application error:", error);
+      handleError(error, {
+        feature: 'application',
+        action: 'create',
+      }, {
+        customMessage: APPLICATION_ERRORS.CREATE_FAILED,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase, fetchApplications]);
 
   // 更新應募
-  const updateApplication = useCallback((id: string, data: ApplicationFormData) => {
-    setIsLoading(true);
+  const updateApplication = useCallback(async (id: string, data: ApplicationFormData) => {
     try {
-      setApplications(prev => prev.map(app =>
-        app.id === id
-          ? { 
-              ...app, 
-              ...data, 
-              desiredSalary: typeof data.desiredSalary === 'string' 
-                ? parseFloat(data.desiredSalary) || 0 
-                : data.desiredSalary || 0,
-              updatedAt: new Date().toISOString() 
-            }
-          : app
-      ));
+      setIsLoading(true);
+
+      // 準備資料 - 使用統一的轉換函數
+      const updateData = {
+        ...transformApplicationToDB(data),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("applications")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) {
+        handleError(error, {
+          feature: 'application',
+          action: 'update',
+        }, {
+          customMessage: APPLICATION_ERRORS.UPDATE_FAILED,
+        });
+        return;
+      }
+
       toast.success("応募情報を更新しました");
+      
+      // 重新獲取資料
+      await fetchApplications();
     } catch (error) {
-      toast.error("応募の更新に失敗しました");
-      console.error("Update application error:", error);
+      handleError(error, {
+        feature: 'application',
+        action: 'update',
+      }, {
+        customMessage: APPLICATION_ERRORS.UPDATE_FAILED,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase, fetchApplications]);
 
   // 刪除應募
-  const deleteApplication = useCallback((id: string) => {
-    setIsLoading(true);
+  const deleteApplication = useCallback(async (id: string) => {
     try {
-      setApplications(prev => prev.filter(app => app.id !== id));
+      setIsLoading(true);
+
+      const { error } = await supabase
+        .from("applications")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        handleError(error, {
+          feature: 'application',
+          action: 'delete',
+        }, {
+          customMessage: APPLICATION_ERRORS.DELETE_FAILED,
+        });
+        return;
+      }
+
       toast.success("応募を削除しました");
+      
+      // 重新獲取資料
+      await fetchApplications();
     } catch (error) {
-      toast.error("応募の削除に失敗しました");
-      console.error("Delete application error:", error);
+      handleError(error, {
+        feature: 'application',
+        action: 'delete',
+      }, {
+        customMessage: APPLICATION_ERRORS.DELETE_FAILED,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase, fetchApplications]);
 
   // 更新狀態
-  const updateApplicationStatus = useCallback((id: string, status: ApplicationStatus) => {
-    setIsLoading(true);
+  const updateApplicationStatus = useCallback(async (id: string, status: ApplicationStatus) => {
     try {
-      setApplications(prev => prev.map(app =>
-        app.id === id
-          ? { ...app, status, updatedAt: new Date().toISOString() }
-          : app
-      ));
+      setIsLoading(true);
+
+      const { error } = await supabase
+        .from("applications")
+        .update({ 
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) {
+        handleError(error, {
+          feature: 'application',
+          action: 'update_status',
+        }, {
+          customMessage: APPLICATION_ERRORS.STATUS_UPDATE_FAILED,
+        });
+        return;
+      }
+
       toast.success("ステータスを更新しました");
+      
+      // 重新獲取資料
+      await fetchApplications();
     } catch (error) {
-      toast.error("ステータスの更新に失敗しました");
-      console.error("Update status error:", error);
+      handleError(error, {
+        feature: 'application',
+        action: 'update_status',
+      }, {
+        customMessage: APPLICATION_ERRORS.STATUS_UPDATE_FAILED,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase, fetchApplications]);
 
   // 清除篩選
   const clearFilters = useCallback(() => {

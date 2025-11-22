@@ -1,10 +1,10 @@
 /**
  * Career Importer Modal
  * 
- * 功能：從 MyCareer 匯入職歷到履歷書
- * - 顯示所有公司（按公司分組）
- * - 預覽職能變化軌跡
- * - 確認後轉換為 WorkExperience
+ * 機能：MyCareerから職歴を履歴書にインポート
+ * - すべての会社を表示（会社ごとにグループ化）
+ * - 職能の変化軌跡をプレビュー
+ * - 確認後にWorkExperienceに変換
  */
 
 "use client";
@@ -35,7 +35,7 @@ export default function CareerImporterModal({
 }: CareerImporterModalProps) {
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
 
-  // 按公司分組
+  // 会社ごとにグループ化
   const companiesMap = useMemo(() => {
     return groupCareersByCompany(careers);
   }, [careers]);
@@ -138,7 +138,7 @@ export default function CareerImporterModal({
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* 左側：公司列表 */}
+                    {/* 左側：会社リスト */}
                     <div>
                       <h3 className="text-sm font-semibold text-base-content/70 mb-3">
                         会社を選択
@@ -185,7 +185,7 @@ export default function CareerImporterModal({
                       </div>
                     </div>
 
-                    {/* 右側：職位詳細預覽 */}
+                    {/* 右側：職位詳細プレビュー */}
                     <div>
                       <h3 className="text-sm font-semibold text-base-content/70 mb-3">
                         職能の変化

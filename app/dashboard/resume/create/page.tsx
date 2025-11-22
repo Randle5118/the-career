@@ -10,7 +10,7 @@ export default function ResumeCreatePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // 表單狀態 (只有必填欄位 + 一些基本欄位)
+  // フォーム状態（必須フィールド + いくつかの基本フィールドのみ）
   const [formData, setFormData] = useState({
     name_kanji: "",
     email: "",
@@ -27,7 +27,7 @@ export default function ResumeCreatePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 驗證必填欄位
+    // 必須フィールドを検証
     if (!formData.name_kanji || !formData.email) {
       toast.error("名前とメールアドレスは必須です");
       return;

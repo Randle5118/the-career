@@ -14,33 +14,24 @@ import {
   FormField,
   FormSelect,
   FormTextarea,
-  FormTags,
   ApplicationMethodInput,
   InterviewMethodInput
 } from "@/components/forms";
+import { TabNavigation, TabPanel, TagInput, type Tab } from "@/components/resume/forms/shared";
+import { APPLICATION_STATUS_OPTIONS, EMPLOYMENT_TYPE_OPTIONS } from "@/constants/application";
+import { APPLICATION_ERRORS } from "@/constants/errors";
 
 interface ApplicationModalProps {
   isOpen: boolean;
   application?: Application | null;
   initialData?: Partial<ApplicationFormData>; // PDF解析データを受け取る
   onClose: () => void;
-  onSave: (data: ApplicationFormData) => void;
+  onSave: (data: ApplicationFormData) => void | Promise<void>;
 }
 
-const statusOptions: { value: ApplicationStatus; label: string }[] = [
-  { value: "bookmarked", label: "ブックマーク" },
-  { value: "applied", label: "応募済み" },
-  { value: "interview", label: "面接" },
-  { value: "offer", label: "内定" },
-  { value: "rejected", label: "不採用・辞退" },
-];
-
-const employmentTypeOptions: { value: EmploymentType; label: string }[] = [
-  { value: "full_time", label: "正社員" },
-  { value: "contract", label: "契約社員" },
-  { value: "part_time", label: "パート・アルバイト" },
-  { value: "dispatch", label: "派遣" },
-];
+// 使用統一常數
+const statusOptions = APPLICATION_STATUS_OPTIONS;
+const employmentTypeOptions = EMPLOYMENT_TYPE_OPTIONS;
 
 const initialFormData: ApplicationFormData = {
   companyName: "",
@@ -79,6 +70,7 @@ export default function ApplicationModal({
   const [formData, setFormData] = useState<ApplicationFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof ApplicationFormData, string>>>({});
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   
   // 載入應募資料 or PDF解析データ
@@ -187,32 +179,39 @@ export default function ApplicationModal({
     const newErrors: Partial<Record<keyof ApplicationFormData, string>> = {};
 
     if (!formData.companyName.trim()) {
-      newErrors.companyName = "会社名は必須です";
+      newErrors.companyName = APPLICATION_ERRORS.VALIDATION.COMPANY_NAME_REQUIRED;
     }
     if (!formData.position.trim()) {
-      newErrors.position = "職種は必須です";
+      newErrors.position = APPLICATION_ERRORS.VALIDATION.POSITION_REQUIRED;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // 防止重複提交
+    if (isSubmitting || loading) {
+      return;
+    }
     
     if (!validate()) {
-      setLoading(false);
       return;
     }
 
+    setIsSubmitting(true);
+    setLoading(true);
+
     try {
-      onSave(formData);
+      await onSave(formData);
       handleClose();
     } catch (error) {
-      console.error("保存エラー:", error);
+      // 錯誤處理由 onSave 處理
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -222,7 +221,7 @@ export default function ApplicationModal({
     onClose();
   };
 
-  const tabs = [
+  const tabs: Tab[] = [
     { id: 'basic', label: '基本情報' },
     { id: 'method', label: '応募方法' },
     { id: 'salary', label: '給与情報' },
@@ -237,24 +236,12 @@ export default function ApplicationModal({
     >
       <form onSubmit={handleSubmit}>
         {/* タブナビゲーション */}
-        <div className="border-b border-base-300 mb-6">
-          <div className="flex gap-4">
-            {tabs.map((tab, index) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(index)}
-                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-                  activeTab === index
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-base-content/60 hover:text-base-content hover:border-base-300'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <TabNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          className="mb-6"
+        />
 
         {/* タブコンテンツ */}
         <div className="space-y-6 min-h-[400px]">
@@ -312,14 +299,13 @@ export default function ApplicationModal({
               </div>
 
               <div className="border-t border-base-300 pt-4 mt-6">
-                <FormTags
+                <TagInput
                   label="タグ"
-                  value={(formData.tags || []).join(", ")}
-                  onChange={(value) => {
-                    const tags = value ? value.split(",").map(tag => tag.trim()).filter(Boolean) : [];
-                    handleTagsChange(tags);
-                  }}
-                  placeholder="例: リモート可, React"
+                  items={formData.tags || []}
+                  onAdd={(tag) => handleTagsChange([...(formData.tags || []), tag])}
+                  onRemove={(index) => handleTagsChange((formData.tags || []).filter((_, i) => i !== index))}
+                  placeholder="タグを入力してEnter（例: リモート可, React）"
+                  badgeStyle="primary"
                 />
 
                 <div className="mt-4">
@@ -453,9 +439,9 @@ export default function ApplicationModal({
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={loading}
+            disabled={loading || isSubmitting}
           >
-            {loading ? (
+            {loading || isSubmitting ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
               application ? "更新" : "追加"

@@ -1,5 +1,5 @@
 /**
- * 履歷書學歷展示組件
+ * 履歴書学歴表示コンポーネント
  */
 
 import type { Resume } from "@/types/resume";
@@ -36,11 +36,20 @@ export default function ResumeEducation({ resume }: ResumeEducationProps) {
                 {edu.school_name}
               </h4>
               
-              <div className="flex flex-wrap gap-3 text-sm text-base-content/70">
+              <div className="flex flex-wrap gap-3 text-sm text-base-content/70 mb-2">
                 <span>{edu.major}</span>
                 <span className="text-base-content/40">•</span>
                 <span>{edu.degree}</span>
               </div>
+              
+              {/* 備考 */}
+              {edu.comment?.trim() && (
+                <div className="mt-3 pt-3 border-t border-base-300">
+                  <p className="text-sm text-base-content/70 whitespace-pre-line">
+                    {edu.comment}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

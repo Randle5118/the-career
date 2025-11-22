@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/libs/supabase/server";
+import { handleApiErrorResponse, handleSupabaseError } from "@/libs/api-helpers";
+import { UpdatePublishedResumeSettingsSchema } from "@/libs/validations/resume";
 
 /**
  * GET /api/resume/published
@@ -34,20 +36,12 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ data: null });
       }
       
-      console.error("[API] Get published resume error:", error);
-      return NextResponse.json(
-        { error: "公開履歴書の取得に失敗しました" },
-        { status: 500 }
-      );
+      throw handleSupabaseError(error);
     }
 
     return NextResponse.json({ data: published });
   } catch (error) {
-    console.error("[API] Get published resume error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
 
@@ -75,20 +69,13 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // 取得 request body
+    // 取得並驗證 request body
     const body = await req.json();
-    const { is_public, public_url_slug } = body;
-
-    // 至少要有一個欄位
-    if (is_public === undefined && !public_url_slug) {
-      return NextResponse.json(
-        { error: "更新する項目を指定してください" },
-        { status: 400 }
-      );
-    }
+    const validatedData = UpdatePublishedResumeSettingsSchema.parse(body);
+    const { is_public, public_url_slug } = validatedData;
 
     // 準備更新的資料
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (is_public !== undefined) updateData.is_public = is_public;
     if (public_url_slug) updateData.public_url_slug = public_url_slug;
 
@@ -101,20 +88,7 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (error) {
-      console.error("[API] Update published resume settings error:", error);
-      
-      // 檢查是否是 unique constraint 錯誤 (slug 重複)
-      if (error.code === "23505") {
-        return NextResponse.json(
-          { error: "このURLスラッグは既に使用されています" },
-          { status: 409 }
-        );
-      }
-      
-      return NextResponse.json(
-        { error: "設定の更新に失敗しました" },
-        { status: 500 }
-      );
+      throw handleSupabaseError(error);
     }
 
     return NextResponse.json({
@@ -123,11 +97,7 @@ export async function PATCH(req: NextRequest) {
       message: "設定を更新しました"
     });
   } catch (error) {
-    console.error("[API] Update published resume settings error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
 
@@ -160,11 +130,7 @@ export async function DELETE(req: NextRequest) {
       .eq("user_id", user.id);
 
     if (error) {
-      console.error("[API] Unpublish resume error:", error);
-      return NextResponse.json(
-        { error: "公開の停止に失敗しました" },
-        { status: 500 }
-      );
+      throw handleSupabaseError(error);
     }
 
     return NextResponse.json({
@@ -172,11 +138,7 @@ export async function DELETE(req: NextRequest) {
       message: "履歴書の公開を停止しました"
     });
   } catch (error) {
-    console.error("[API] Unpublish resume error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
 

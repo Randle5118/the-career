@@ -1,8 +1,9 @@
 "use client";
 
-import type { Application, SalaryDetails } from "@/types/application";
-import { useState, useEffect } from "react";
+import type { Application, SalaryDetails, OfferSalaryDetails, SalaryBreakdown } from "@/types/application";
+import { useState, useEffect, memo } from "react";
 import { MapPin, Briefcase, Link2, Calendar, User, Banknote, Video, Building2, ExternalLink, Tag, Edit2, Trash2 } from "lucide-react";
+import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BORDER_COLORS, EMPLOYMENT_TYPE_LABELS } from "@/constants/application";
 
 // Helper function to format salary display
 const formatSalary = (salary: SalaryDetails | undefined): string | null => {
@@ -18,10 +19,14 @@ const formatSalary = (salary: SalaryDetails | undefined): string | null => {
 };
 
 // Helper function to format offer salary (different structure)
-const formatOfferSalary = (offerSalary: any): string | null => {
-  if (!offerSalary || !offerSalary.salaryBreakdown) return null;
+
+const formatOfferSalary = (offerSalary: OfferSalaryDetails | undefined): string | null => {
+  if (!offerSalary?.salaryBreakdown?.length) return null;
   
-  const total = offerSalary.salaryBreakdown.reduce((sum: number, item: any) => sum + (item.salary || 0), 0);
+  const total = offerSalary.salaryBreakdown.reduce(
+    (sum: number, item: SalaryBreakdown) => sum + (item.salary || 0), 
+    0
+  );
   return `${total}万円`;
 };
 
@@ -32,31 +37,13 @@ interface ApplicationCardProps {
   onViewDetail?: (application: Application) => void;
 }
 
-// Status badge configuration
-const statusConfig = {
-  bookmarked: { label: "ブックマーク", color: "badge-ghost" },
-  applied: { label: "応募済み", color: "badge-info" },
-  casual_interview: { label: "面談", color: "badge-secondary" },
-  interview: { label: "面接", color: "badge-primary" },
-  first_interview: { label: "一次面接", color: "badge-primary" },
-  final_interview: { label: "最終面接", color: "badge-warning" },
-  offer: { label: "内定", color: "badge-success" },
-  offer_received: { label: "オファー受領", color: "badge-success" },
-  rejected: { label: "不採用", color: "badge-error" },
-  withdrawn: { label: "辞退", color: "badge-ghost" },
-};
+// Status badge configuration - 使用統一常數
+const getStatusConfig = (status: Application['status']) => ({
+  label: APPLICATION_STATUS_LABELS[status] || status,
+  color: APPLICATION_STATUS_COLORS[status] || "badge-ghost",
+});
 
-const employmentTypeLabels = {
-  full_time: "正社員",
-  contract: "契約社員",
-  temporary: "派遣社員",
-  part_time: "パート・アルバイト",
-  freelance: "フリーランス",
-  side_job: "副業",
-  dispatch: "派遣", // 保留向後相容性
-};
-
-export default function ApplicationCard({
+function ApplicationCard({
   application,
   onEdit,
   onDelete,
@@ -74,7 +61,7 @@ export default function ApplicationCard({
     setShowDeleteConfirm(false);
   };
 
-  const statusInfo = statusConfig[application.status];
+  const statusInfo = getStatusConfig(application.status);
   const isNextActionOverdue =
     mounted &&
     application.schedule?.deadline &&
@@ -198,7 +185,7 @@ export default function ApplicationCard({
             <div className="flex items-center gap-2 mb-1.5">
               {application.employmentType && (
                 <div className="badge badge-sm badge-outline">
-                  {employmentTypeLabels[application.employmentType]}
+                  {EMPLOYMENT_TYPE_LABELS[application.employmentType]}
                 </div>
               )}
               <div className={`badge badge-sm ${statusInfo.color}`}>
@@ -417,3 +404,14 @@ export default function ApplicationCard({
     </>
   );
 }
+
+// 使用 React.memo 優化效能，只在 application 或 callback 改變時重新渲染
+export default memo(ApplicationCard, (prevProps, nextProps) => {
+  return (
+    prevProps.application.id === nextProps.application.id &&
+    prevProps.application.updatedAt === nextProps.application.updatedAt &&
+    prevProps.onEdit === nextProps.onEdit &&
+    prevProps.onDelete === nextProps.onDelete &&
+    prevProps.onViewDetail === nextProps.onViewDetail
+  );
+});

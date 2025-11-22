@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/libs/supabase/server";
+import { handleApiErrorResponse, handleSupabaseError } from "@/libs/api-helpers";
+import { ResumeFormDataSchema } from "@/libs/validations/resume";
 
 /**
  * GET /api/resumes
- * 取得用戶的所有 resume templates
+ * 取得用戶的所有履歷列表 (與 /list 相同)
  */
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
     
-    // 認證檢查
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -21,45 +22,33 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 查詢用戶的所有 resumes
     const { data: resumes, error } = await supabase
       .from("resumes")
       .select("*")
       .eq("user_id", user.id)
-      .order("is_primary", { ascending: false }) // 主要履歷排最前面
+      .order("is_primary", { ascending: false })
       .order("updated_at", { ascending: false });
 
     if (error) {
-      console.error("[API] Get resumes error:", error);
-      return NextResponse.json(
-        { error: "履歴書の取得に失敗しました" },
-        { status: 500 }
-      );
+      throw handleSupabaseError(error);
     }
 
     return NextResponse.json({ data: resumes || [] });
   } catch (error) {
-    console.error("[API] Get resumes error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
 
 /**
  * POST /api/resumes
- * 建立新的 resume template
+ * 建立新的履歷
  * 
- * 必填欄位:
- * - name_kanji: string
- * - email: string
+ * Body: { resume_name: string }
  */
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     
-    // 認證檢查
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -71,56 +60,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 取得 request body
     const body = await req.json();
-    const { name_kanji, email, ...otherFields } = body;
+    // 簡單驗證 resume_name
+    const resumeName = body.resume_name || "履歴書";
 
-    // 驗證必填欄位
-    if (!name_kanji || !email) {
-      return NextResponse.json(
-        { error: "名前とメールアドレスは必須です" },
-        { status: 400 }
-      );
-    }
-
-    // 檢查是否已有 resume
-    const { data: existing } = await supabase
+    // 檢查是否為第一份履歷 (如果是，設為 primary)
+    const { count } = await supabase
       .from("resumes")
-      .select("id")
-      .eq("user_id", user.id)
-      .limit(1);
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
 
-    // 如果這是第一個 resume，設為主要履歷
-    const isPrimary = !existing || existing.length === 0;
+    const isPrimary = count === 0;
 
-    // 建立新 resume
     const { data: newResume, error } = await supabase
       .from("resumes")
       .insert({
         user_id: user.id,
-        name_kanji,
-        email,
+        resume_name: resumeName,
         is_primary: isPrimary,
-        ...otherFields,
+        // 初始化為空陣列，避免 null
+        education: [],
+        work_experience: [],
+        certifications: [],
+        awards: [],
+        languages: [],
+        skills: [],
+        preferences: {},
       })
       .select()
       .single();
 
     if (error) {
-      console.error("[API] Create resume error:", error);
-      return NextResponse.json(
-        { error: "履歴書の作成に失敗しました" },
-        { status: 500 }
-      );
+      throw handleSupabaseError(error);
     }
 
-    return NextResponse.json({ data: newResume }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      data: newResume,
+      message: "履歴書を作成しました"
+    }, { status: 201 });
+
   } catch (error) {
-    console.error("[API] Create resume error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    return handleApiErrorResponse(error);
   }
 }
-

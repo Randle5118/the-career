@@ -47,7 +47,7 @@ export default function ApplicationsPage() {
     { id: "applied", label: `応募済み (${statusStats.applied})` },
     { id: "interview", label: `面談・面接 (${statusStats.interview})` },
     { id: "offer", label: `内定 (${statusStats.offer})` },
-    { id: "rejected", label: `応募終了 (${statusStats.rejected})` },
+    { id: "rejected", label: `終了 (${statusStats.rejected})` },
   ];
 
   const handleAddNew = () => {
@@ -102,11 +102,9 @@ export default function ApplicationsPage() {
   const handleSave = async (applicationData: ApplicationFormData) => {
     try {
       if (editingApplication) {
-        updateApplication(editingApplication.id, applicationData);
-        toast.success("応募情報を更新しました");
+        await updateApplication(editingApplication.id, applicationData);
       } else {
-        addApplication(applicationData);
-        toast.success("新しい応募を追加しました");
+        await addApplication(applicationData);
       }
       handleClose();
     } catch (error) {

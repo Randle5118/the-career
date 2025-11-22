@@ -1,5 +1,5 @@
 /**
- * 履歷書技能・資格展示組件
+ * 履歴書スキル・資格表示コンポーネント
  */
 
 import type { Resume } from "@/types/resume";

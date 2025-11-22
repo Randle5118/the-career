@@ -93,7 +93,7 @@ export default function ComparePage() {
       case "applied": return "応募済み";
       case "interview": return "面談・面接";
       case "offer": return "内定";
-      case "rejected": return "応募終了";
+      case "rejected": return "終了";
       default: return "-";
     }
   };

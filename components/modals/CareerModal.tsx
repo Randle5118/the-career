@@ -3,16 +3,21 @@
 import React, { useState, useEffect } from "react";
 import type { Career, CareerFormData, SalaryChange, SalaryComponent, Currency, OfferSalary } from "@/types/career";
 import Modal from "./Modal";
-import { Trash2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   FormField,
   FormSelect,
   FormTextarea,
-  FormTags,
   SalaryBreakdownInput,
   CareerDateRangeInput,
   type SelectOption
 } from "@/components/forms";
+import { 
+  FormSection, 
+  FormCard, 
+  TagInput, 
+  useControlledArrayField 
+} from "@/components/resume/forms/shared";
 
 interface CareerModalProps {
   isOpen: boolean;
@@ -67,7 +72,8 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
         notes: career.notes || "",
       });
       
-      setSalaryHistory(career.salaryHistory || []);
+      // 確保 salaryHistory 始終是陣列
+      setSalaryHistory(Array.isArray(career.salaryHistory) ? career.salaryHistory : []);
       setOfferSalary(career.offerSalary || null);
     } else {
       setFormData({
@@ -99,8 +105,8 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleTagsChange = (value: string) => {
-    setFormData(prev => ({ ...prev, tags: value }));
+  const handleTagsChange = (tags: string[]) => {
+    setFormData(prev => ({ ...prev, tags: tags.join(", ") }));
   };
 
   const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
@@ -115,26 +121,23 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
     }));
   };
 
-  // Salary history handlers
-  const addSalaryHistory = () => {
-    setSalaryHistory(prev => [...prev, {
+  // Salary history handlers (使用 useControlledArrayField)
+  const {
+    items: salaryHistoryItems,
+    add: addSalaryHistory,
+    remove: removeSalaryHistory,
+    update: updateSalaryHistory,
+  } = useControlledArrayField(
+    salaryHistory,
+    setSalaryHistory,
+    () => ({
       yearMonth: "",
-      currency: "JPY",
+      currency: "JPY" as Currency,
       salaryBreakdown: [{ salary: 0, salaryType: "" }],
       position: "",
       notes: ""
-    }]);
-  };
-
-  const updateSalaryHistory = (index: number, field: keyof SalaryChange, value: any) => {
-    setSalaryHistory(prev => prev.map((item, i) => 
-      i === index ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removeSalaryHistory = (index: number) => {
-    setSalaryHistory(prev => prev.filter((_, i) => i !== index));
-  };
+    })
+  );
 
   return (
     <Modal 
@@ -142,68 +145,68 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
       onClose={onClose} 
       title={career ? "職務経歴を編集" : "職務経歴を追加"}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* 基本情報 */}
-        <section className="bg-base-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-base-content mb-2 pb-2 border-b border-base-300">
-            基本情報
-          </h3>
-          
+        <FormSection title="基本情報">
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              label="会社名"
-              name="companyName"
-              value={formData.companyName}
-              onChange={handleChange}
-              placeholder="例: 株式会社メルカリ"
-              required
-            />
-            <FormField
-              label="職種・ポジション"
-              name="position"
-              value={formData.position}
-              onChange={handleChange}
-              placeholder="例: フロントエンドエンジニア"
-              required
-            />
-          </div>
+              <FormField
+                label="会社名"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
+                placeholder="例: 株式会社メルカリ"
+                required
+              />
+              <FormField
+                label="職種・ポジション"
+                name="position"
+                value={formData.position}
+                onChange={handleChange}
+                placeholder="例: フロントエンドエンジニア"
+                required
+              />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormSelect
-              label="雇用形態"
-              name="employmentType"
-              value={formData.employmentType}
-              onChange={handleChange}
-              options={employmentTypeOptions}
-              required
-            />
-            <FormSelect
-              label="ステータス"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              options={statusOptions}
-              required
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormSelect
+                label="雇用形態"
+                name="employmentType"
+                value={formData.employmentType}
+                onChange={handleChange}
+                options={employmentTypeOptions}
+                required
+              />
+              <FormSelect
+                label="ステータス"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                options={statusOptions}
+                required
+              />
+            </div>
 
-          <CareerDateRangeInput
-            startDate={formData.startDate}
-            endDate={formData.endDate}
-            onStartDateChange={(date) => handleDateChange('startDate', date)}
-            onEndDateChange={(date) => handleDateChange('endDate', date)}
-            onEndDateToggle={handleCurrentJobToggle}
-            isCurrent={formData.status === "current"}
-          />
+            <CareerDateRangeInput
+              startDate={formData.startDate}
+              endDate={formData.endDate}
+              onStartDateChange={(date) => handleDateChange('startDate', date)}
+              onEndDateChange={(date) => handleDateChange('endDate', date)}
+              onEndDateToggle={handleCurrentJobToggle}
+              isCurrent={formData.status === "current"}
+            />
 
-          <FormTags
-            label="タグ"
-            value={formData.tags}
-            onChange={handleTagsChange}
-            placeholder="例: React, TypeScript, フルリモート"
-            helpText="カンマ区切りで複数のタグを入力"
-          />
+            <TagInput
+              label="タグ"
+              items={formData.tags ? formData.tags.split(",").map(t => t.trim()).filter(Boolean) : []}
+              onAdd={(tag) => handleTagsChange([...(formData.tags ? formData.tags.split(",").map(t => t.trim()).filter(Boolean) : []), tag])}
+              onRemove={(index) => {
+                const tags = formData.tags.split(",").map(t => t.trim()).filter(Boolean);
+                handleTagsChange(tags.filter((_, i) => i !== index));
+              }}
+              placeholder="タグを入力してEnter（例: React, TypeScript, フルリモート）"
+              badgeStyle="primary"
+            />
 
             <FormTextarea
               label="メモ"
@@ -214,17 +217,17 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
               rows={3}
             />
           </div>
-        </section>
+        </FormSection>
 
         {/* Offer Salary Section */}
-        <section className="bg-base-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2 pb-2 border-b border-base-300">
-            <h3 className="text-lg font-semibold text-base-content">オファー給与情報</h3>
-            {offerSalary ? (
+        <FormSection
+          title="オファー給与情報"
+          extraActions={
+            offerSalary ? (
               <button
                 type="button"
                 onClick={() => setOfferSalary(null)}
-                className="btn btn-sm btn-ghost text-error"
+                className="btn btn-xs btn-ghost text-error"
               >
                 削除
               </button>
@@ -236,15 +239,15 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
                   salaryBreakdown: [{ salary: 0, salaryType: "" }],
                   notes: ""
                 })}
-                className="btn btn-sm btn-ghost text-primary"
+                className="btn btn-xs btn-primary"
               >
                 <Plus className="w-4 h-4" />
                 追加
               </button>
-            )}
-          </div>
-
-          {offerSalary && (
+            )
+          }
+        >
+          {offerSalary ? (
             <div className="space-y-4">
               <SalaryBreakdownInput
                 salaryBreakdown={offerSalary.salaryBreakdown}
@@ -267,73 +270,74 @@ const CareerModal: React.FC<CareerModalProps> = ({ isOpen, career, onClose, onSa
                 rows={2}
               />
             </div>
+          ) : (
+            <div className="text-center py-8 text-base-content/50">
+              <p className="text-sm">オファー給与情報が登録されていません</p>
+              <p className="text-xs mt-1">上の「追加」ボタンをクリックして登録してください</p>
+            </div>
           )}
-        </section>
+        </FormSection>
 
         {/* Salary History Section */}
-        <section className="bg-base-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2 pb-2 border-b border-base-300">
-            <h3 className="text-lg font-semibold text-base-content">給与履歴</h3>
-            <button
-              type="button"
-              onClick={addSalaryHistory}
-              className="btn btn-sm btn-ghost text-primary"
-            >
-              <Plus className="w-4 h-4" />
-              追加
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {salaryHistory.map((change, index) => (
-            <div key={index} className="rounded-lg space-y-4 pb-4 border-b border-base-300">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">給与履歴 #{index + 1}</span>
-                <button
-                  type="button"
-                  onClick={() => removeSalaryHistory(index)}
-                  className="btn btn-sm btn-ghost text-error"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  label="年月"
-                  name={`salaryHistory-${index}-yearMonth`}
-                  type="text"
-                  value={change.yearMonth}
-                  onChange={(e) => updateSalaryHistory(index, "yearMonth", e.target.value)}
-                  placeholder="YYYY-MM"
-                />
-                <FormField
-                  label="役職"
-                  name={`salaryHistory-${index}-position`}
-                  value={change.position || ""}
-                  onChange={(e) => updateSalaryHistory(index, "position", e.target.value)}
-                  placeholder="役職・ポジション"
-                />
-              </div>
-
-              <SalaryBreakdownInput
-                salaryBreakdown={change.salaryBreakdown}
-                currency={change.currency}
-                onChange={(breakdown) => updateSalaryHistory(index, "salaryBreakdown", breakdown)}
-              />
-
-              <FormTextarea
-                label="備考"
-                name={`salaryHistory-${index}-notes`}
-                value={change.notes || ""}
-                onChange={(e) => updateSalaryHistory(index, "notes", e.target.value)}
-                placeholder="昇給理由やその他の備考"
-                rows={2}
-              />
+        <FormSection
+          title="給与履歴"
+          onAdd={addSalaryHistory}
+          addButtonText="追加"
+          addButtonSize="xs"
+        >
+          {salaryHistoryItems.length === 0 ? (
+            <div className="text-center py-8 text-base-content/50">
+              <p className="text-sm">給与履歴が登録されていません</p>
+              <p className="text-xs mt-1">上の「追加」ボタンをクリックして登録してください</p>
             </div>
-            ))}
-          </div>
-        </section>
+          ) : (
+            <div className="space-y-4">
+              {salaryHistoryItems.map((change, index) => (
+                <FormCard
+                  key={index}
+                  title={`給与履歴 #${index + 1}`}
+                  subtitle={change.yearMonth ? `${change.yearMonth}${change.position ? ` - ${change.position}` : ''}` : undefined}
+                  onRemove={() => removeSalaryHistory(index)}
+                >
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        label="年月"
+                        name={`salaryHistory-${index}-yearMonth`}
+                        type="text"
+                        value={change.yearMonth}
+                        onChange={(e) => updateSalaryHistory(index, { yearMonth: e.target.value })}
+                        placeholder="YYYY-MM"
+                      />
+                      <FormField
+                        label="役職"
+                        name={`salaryHistory-${index}-position`}
+                        value={change.position || ""}
+                        onChange={(e) => updateSalaryHistory(index, { position: e.target.value })}
+                        placeholder="役職・ポジション"
+                      />
+                    </div>
+
+                    <SalaryBreakdownInput
+                      salaryBreakdown={change.salaryBreakdown}
+                      currency={change.currency}
+                      onChange={(breakdown) => updateSalaryHistory(index, { salaryBreakdown: breakdown })}
+                    />
+
+                    <FormTextarea
+                      label="備考"
+                      name={`salaryHistory-${index}-notes`}
+                      value={change.notes || ""}
+                      onChange={(e) => updateSalaryHistory(index, { notes: e.target.value })}
+                      placeholder="昇給理由やその他の備考"
+                      rows={2}
+                    />
+                  </div>
+                </FormCard>
+              ))}
+            </div>
+          )}
+        </FormSection>
 
         {/* Submit Buttons */}
         <div className="flex justify-end gap-3 pt-6 border-t border-base-300">

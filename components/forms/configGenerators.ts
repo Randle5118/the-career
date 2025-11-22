@@ -69,7 +69,7 @@ export const createApplicationFormConfig = (): FormConfig => {
               { value: "applied", label: "応募済み" },
               { value: "interview", label: "面談・面接" },
               { value: "offer", label: "内定" },
-              { value: "rejected", label: "応募終了" },
+              { value: "rejected", label: "終了" },
             ],
           }),
           createFieldConfig("employment-type", "select", "雇用形態", "employmentType", {
