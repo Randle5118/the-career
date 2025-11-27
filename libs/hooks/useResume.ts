@@ -28,7 +28,7 @@ export interface UseResumeReturn {
   fetchResume: () => Promise<void>;
   fetchPublishedResume: () => Promise<void>;
   updateResume: (data: ResumeFormData) => Promise<void>;
-  publishResume: (isPublic?: boolean, slug?: string) => Promise<void>;
+  publishResume: (isPublic?: boolean, slug?: string, expiresAt?: string | null) => Promise<void>;
   
   // 計算
   completeness: number;
@@ -141,9 +141,9 @@ export function useResume(): UseResumeReturn {
       
       const { data } = await response.json();
       
-      // APIは単一オブジェクトを返す（1ユーザー1履歴書）
-      // dataはResumeまたはnullの可能性がある
-      setResume(data);
+      // APIは配列を返すため、最初の履歴書（最新のPrimary）を使用
+      const primaryResume = Array.isArray(data) ? data[0] : data;
+      setResume(primaryResume || null);
     } catch (error) {
       handleError(error, {
         feature: 'resume',
@@ -196,8 +196,17 @@ export function useResume(): UseResumeReturn {
   const updateResume = useCallback(async (data: ResumeFormData) => {
     setIsUpdating(true);
     
+    // IDがない場合はエラー（useResumes hookのcreateResumeを使用すべき）
+    const targetId = data.id || resume?.id;
+    
+    if (!targetId) {
+      setIsUpdating(false);
+      toast.error("履歴書IDが見つかりません");
+      return;
+    }
+    
     try {
-      const response = await fetch('/api/resumes', {
+      const response = await fetch(`/api/resumes/${targetId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +235,7 @@ export function useResume(): UseResumeReturn {
   }, []);
   
   // 履歴書を公開
-  const publishResume = useCallback(async (isPublic = false, slug?: string) => {
+  const publishResume = useCallback(async (isPublic = false, slug?: string, expiresAt?: string | null) => {
     if (!resume) {
       handleError(new Error(RESUME_ERRORS.NOT_FOUND), {
         feature: 'resume',
@@ -248,6 +257,7 @@ export function useResume(): UseResumeReturn {
         body: JSON.stringify({
           is_public: isPublic,
           public_url_slug: slug,
+          public_expires_at: expiresAt,
         }),
       });
       

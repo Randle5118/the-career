@@ -53,6 +53,17 @@ export async function GET(
       );
     }
 
+    // 檢查是否過期
+    if (resume.public_expires_at && new Date(resume.public_expires_at) < new Date()) {
+      return NextResponse.json(
+        { 
+          error: "この履歴書の公開期限は終了しました",
+          code: "EXPIRED"
+        },
+        { status: 410 } // 410 Gone
+      );
+    }
+
     // 移除敏感資訊 (雙重保險)
     const publicResume = {
       ...resume,
@@ -63,6 +74,13 @@ export async function GET(
       building: undefined,
       birth_date: undefined,
       name_kana: undefined,
+      // 計算狀態 (active, expired, disabled)
+      // 注意：disabled 的情況實際上在上面的 .eq("is_public", true) 就已經被過濾掉了，
+      // 但為了保持邏輯完整性與未來可能的寬鬆查詢，這裡還是列出。
+      status: 
+        !resume.is_public ? "disabled" :
+        (resume.public_expires_at && new Date(resume.public_expires_at) < new Date()) ? "expired" : 
+        "active"
     };
 
     // 加入 Rate Limit headers

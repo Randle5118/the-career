@@ -24,13 +24,22 @@ export default function ResumeSettingsForm({
 }: ResumeSettingsFormProps) {
   const [showSlugHelper, setShowSlugHelper] = useState(false);
   
-  // 公開URL のプレビュー
-  const publicUrlPreview = resume.public_url_slug 
-    ? `${window.location.origin}/r/${resume.public_url_slug}`
+  // 公開URL のプレビュー（slug がない場合は id を使用）
+  const effectiveSlug = resume.public_url_slug || resume.id;
+  const publicUrlPreview = effectiveSlug
+    ? `${window.location.origin}/r/${effectiveSlug}`
     : "";
   
   // 公開期限の状態チェック
   const isExpired = resume.public_expires_at && new Date(resume.public_expires_at) < new Date();
+  
+  // 公開設定が有効化されたときに slug がなければ id をセット
+  const handlePublicToggle = (value: boolean) => {
+    onChange('is_public', value);
+    if (value && !resume.public_url_slug) {
+      onChange('public_url_slug', resume.id);
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -115,7 +124,7 @@ export default function ResumeSettingsForm({
                 type="checkbox"
                 className="toggle toggle-success"
                 checked={resume.is_public}
-                onChange={(e) => onChange('is_public', e.target.checked)}
+                onChange={(e) => handlePublicToggle(e.target.checked)}
               />
               <div>
                 <span className="label-text font-medium">
@@ -153,6 +162,7 @@ export default function ResumeSettingsForm({
                     <div>
                       <p>半角英数字とハイフンのみ使用可能</p>
                       <p>例: tanaka-taro、engineer-2024</p>
+                      <p className="mt-1 text-base-content/60">※ 未入力の場合は履歴書IDが使用されます</p>
                     </div>
                   </div>
                 )}
@@ -167,7 +177,7 @@ export default function ResumeSettingsForm({
                     value={resume.public_url_slug || ""}
                     onChange={(e) => onChange('public_url_slug', e.target.value.toLowerCase())}
                     className="input input-bordered flex-1"
-                    placeholder="your-unique-url"
+                    placeholder={resume.id || "your-unique-url"}
                     pattern="[a-z0-9-]+"
                   />
                 </div>
@@ -192,6 +202,64 @@ export default function ResumeSettingsForm({
                 <label className="block text-sm font-medium text-base-content mb-2">
                   公開期限（オプション）
                 </label>
+                <select 
+                  className="select select-bordered w-full"
+                  value={
+                    !resume.public_expires_at 
+                      ? "null" 
+                      : (() => {
+                          // 計算剩餘天數來決定顯示哪個選項
+                          const expiry = new Date(resume.public_expires_at);
+                          const now = new Date();
+                          // 由於可能會有微小時間差，這裡做簡單的天數估算
+                          // 7天 = 7 * 24 * 60 * 60 * 1000 ms
+                          const diff = expiry.getTime() - now.getTime();
+                          const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                          
+                          // 如果不是標準選項 (7, 30, 90)，則顯示為"自定義"或直接顯示日期
+                          // 為了簡化，如果已經有日期且不為 null，我們暫時統一視為"自定義"並顯示該日期，
+                          // 但這裡為了符合 UX 要求，我們提供標準選項供選擇。
+                          // 如果現有日期不符合標準選項，我們可以顯示一個"自定義日期"選項，或者重置。
+                          // 這裡為了簡單，我們先檢查是否接近標準選項，如果不接近則選中"custom"
+                          
+                          // 為了避免複雜的日期比對邏輯造成 UX 困擾，
+                          // 我們採取：
+                          // 1. 用戶選擇 -> 計算出未來的 ISO String
+                          // 2. 顯示時 -> 如果是 null 顯示"永久"，否則顯示"自定義"並附帶日期選擇器
+                          // 但根據需求「下拉選單或日期選擇器」，我們可以用混合模式
+                          return "custom"; 
+                        })()
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "null") {
+                      onChange('public_expires_at', null);
+                    } else if (val === "7d") {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 7);
+                      onChange('public_expires_at', d.toISOString());
+                    } else if (val === "30d") {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 30);
+                      onChange('public_expires_at', d.toISOString());
+                    } else if (val === "90d") {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 90);
+                      onChange('public_expires_at', d.toISOString());
+                    }
+                    // "custom" 不做處理，由下方日期選擇器處理
+                  }}
+                >
+                  <option value="null">無期限 (永久)</option>
+                  <option value="7d">7日間</option>
+                  <option value="30d">30日間</option>
+                  <option value="90d">90日間</option>
+                  <option value="custom">カスタム日付</option>
+                </select>
+                
+                {/* 日期選擇器 (當選擇了自定義或已經有設定日期時顯示) */}
+                {resume.public_expires_at && (
+                  <div className="mt-2">
                 <input
                   type="date"
                   name="public_expires_at"
@@ -200,6 +268,9 @@ export default function ResumeSettingsForm({
                   className="input input-bordered w-full"
                   min={new Date().toISOString().split('T')[0]}
                 />
+                  </div>
+                )}
+
                 <p className="text-xs text-base-content/50 mt-1">
                   設定した日時を過ぎると自動的に非公開になります
                 </p>

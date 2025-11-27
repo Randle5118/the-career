@@ -42,7 +42,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
       {helpText && !error && <Description>{helpText}</Description>}
       <Select
         name={name}
-        value={value}
+        value={value ?? ""}
         onChange={onChange}
         required={required}
         disabled={disabled}

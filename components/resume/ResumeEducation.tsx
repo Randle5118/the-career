@@ -36,11 +36,9 @@ export default function ResumeEducation({ resume }: ResumeEducationProps) {
                 {edu.school_name}
               </h4>
               
-              <div className="flex flex-wrap gap-3 text-sm text-base-content/70 mb-2">
-                <span>{edu.major}</span>
-                <span className="text-base-content/40">•</span>
-                <span>{edu.degree}</span>
-              </div>
+              <p className="text-sm text-base-content/70">
+                {edu.major}
+              </p>
               
               {/* 備考 */}
               {edu.comment?.trim() && (

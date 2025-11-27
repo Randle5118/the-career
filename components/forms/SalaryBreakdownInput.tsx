@@ -63,7 +63,7 @@ export const SalaryBreakdownInput: React.FC<SalaryBreakdownInputProps> = ({
             <label className="block text-sm text-base-content mb-1.5">種類</label>
             <Input
               type="text"
-              value={item.salaryType}
+              value={item.salaryType ?? ""}
               onChange={(e) => updateSalaryComponent(index, "salaryType", e.target.value)}
               placeholder="例: 基本給、賞与、手当"
             />

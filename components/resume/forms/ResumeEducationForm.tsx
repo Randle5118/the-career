@@ -37,7 +37,6 @@ export default function ResumeEducationForm({
       date: "",
       school_name: "",
       major: "",
-      degree: "",
       comment: "",
     })
   );
@@ -95,15 +94,6 @@ export default function ResumeEducationForm({
                     name={`education-${index}-major`}
                     value={edu.major}
                     onChange={(e) => update(index, "major", e.target.value)}
-                    required
-                  />
-
-                  <FormField
-                    label="卒業区分"
-                    name={`education-${index}-degree`}
-                    value={edu.degree}
-                    onChange={(e) => update(index, "degree", e.target.value)}
-                    placeholder="卒業 / 在学中 / 中退"
                     required
                   />
                 </div>

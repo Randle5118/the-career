@@ -39,7 +39,7 @@ export const FormTextarea: React.FC<FormTextareaProps> = ({
       {helpText && !error && <Description>{helpText}</Description>}
       <Textarea
         name={name}
-        value={value}
+        value={value ?? ""}
         onChange={onChange}
         placeholder={placeholder}
         required={required}

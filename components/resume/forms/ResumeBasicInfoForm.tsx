@@ -119,7 +119,7 @@ export default function ResumeBasicInfoForm({
                 <input
                   type="date"
                   name="birth_date"
-                  value={resume.birth_date}
+                  value={resume.birth_date || ""}
                   onChange={handleBirthDateChange}
                   className="input input-bordered w-full"
                   required
@@ -139,7 +139,7 @@ export default function ResumeBasicInfoForm({
                 <input
                   type="number"
                   name="age"
-                  value={resume.age.toString()}
+                  value={resume.age !== null ? resume.age.toString() : ""}
                   readOnly
                   className="input input-bordered w-full bg-base-200 cursor-not-allowed"
                   placeholder="生年月日から自動計算されます"
@@ -268,7 +268,7 @@ export default function ResumeBasicInfoForm({
               </label>
               <textarea
                 name="career_summary"
-                value={resume.career_summary}
+                value={resume.career_summary || ""}
                 onChange={handleChange}
                 rows={6}
                 className="textarea textarea-bordered w-full text-sm"
@@ -282,7 +282,7 @@ export default function ResumeBasicInfoForm({
               </label>
               <textarea
                 name="self_pr"
-                value={resume.self_pr}
+                value={resume.self_pr || ""}
                 onChange={handleChange}
                 rows={6}
                 className="textarea textarea-bordered w-full text-sm"

@@ -68,19 +68,24 @@ export default function ResumeWorkExperience({ resume }: ResumeWorkExperiencePro
             </div>
             
             <div className="flex flex-wrap gap-3 text-sm text-base-content/70">
+              {exp.industry && (
+                <>
               <span className="font-medium">{exp.industry}</span>
+                  {(exp.department || exp.employment_type) && (
               <span className="text-base-content/40">•</span>
+                  )}
+                </>
+              )}
               {exp.department && (
                 <>
                   <span>{exp.department}</span>
+                  {exp.employment_type && (
                   <span className="text-base-content/40">•</span>
+                  )}
                 </>
               )}
               {exp.employment_type && (
-                <>
                   <span>{exp.employment_type}</span>
-                  <span className="text-base-content/40">•</span>
-                </>
               )}
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" />

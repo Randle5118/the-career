@@ -70,7 +70,7 @@ export async function POST(
     // 取得並驗證 request body (可選)
     const body = await req.json().catch(() => ({}));
     const validatedData = PublishResumeSchema.parse(body);
-    const { is_public = true, public_url_slug } = validatedData;
+    const { is_public = true, public_url_slug, public_expires_at } = validatedData;
 
     // 取得原始 resume
     const { data: resume, error: fetchError } = await supabase
@@ -87,30 +87,34 @@ export async function POST(
       );
     }
 
-    // 檢查是否已有公開履歷
+    // 檢查是否已有對應此原始履歷的公開版本
     const { data: existingPublished } = await supabase
       .from("published_resumes")
       .select("id, public_url_slug")
       .eq("user_id", user.id)
+      .eq("source_resume_id", id)
       .single();
 
     // 準備發布的資料 (移除敏感資訊)
     const sanitizedData = sanitizePrivateData(resume);
     
     // 決定 slug
-    let finalSlug = existingPublished?.public_url_slug || public_url_slug;
+    // 優先順序: 1) 請求中的 public_url_slug, 2) 現有的 slug, 3) 使用 resume ID
+    let finalSlug = public_url_slug || existingPublished?.public_url_slug;
+    
     if (!finalSlug) {
-      // 首次發布且沒提供 slug，自動生成
-      const namePart = resume.name_romaji?.toLowerCase().replace(/\s+/g, '-') || 'user';
-      finalSlug = `${namePart}-${user.id.substring(0, 8)}`;
+      // 首次發布且沒提供 slug，預設使用 resume ID
+      finalSlug = id;
     }
 
     const publishData = {
       user_id: resume.user_id,
+      source_resume_id: id, // 記錄來源履歷 ID
       resume_name: sanitizedData.resume_name,
       completeness: sanitizedData.completeness,
       is_public,
       public_url_slug: finalSlug,
+      public_expires_at: public_expires_at === undefined ? null : public_expires_at, // 如果未提供，預設為 null (永久有效)
       version: 1, // 固定為 1 (更新模式)
       
       // 個人資訊 (已淨化)
@@ -163,7 +167,7 @@ export async function POST(
       const { data, error: updateError } = await supabase
         .from("published_resumes")
         .update(publishData)
-        .eq("user_id", user.id)
+        .eq("id", existingPublished.id) // 使用 ID 精確更新
         .select()
         .single();
 
@@ -188,9 +192,14 @@ export async function POST(
       isNewPublish = true;
     }
 
+    // 計算狀態並回傳
+    const status = !published.is_public ? "disabled" :
+      (published.public_expires_at && new Date(published.public_expires_at) < new Date()) ? "expired" : 
+      "active";
+
     return NextResponse.json({
       success: true,
-      data: published,
+      data: { ...published, status }, // 加入計算後的 status
       public_url: `/r/${published.public_url_slug}`,
       message: isNewPublish ? "履歴書を公開しました" : "履歴書を更新しました"
     }, { status: isNewPublish ? 201 : 200 });

@@ -30,6 +30,7 @@ export default function PublicResumePage({
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("basic");
   const [slug, setSlug] = useState<string>("");
+  const [error, setError] = useState<{ type: 'expired' | 'not_found'; message: string } | null>(null);
   
   useEffect(() => {
     // Unwrap params Promise
@@ -46,7 +47,17 @@ export default function PublicResumePage({
         const response = await fetch(`/api/published-resumes/${slug}`);
         
         if (!response.ok) {
+          if (response.status === 410) {
+            // 公開期限切れ
+            const data = await response.json();
+            setError({
+              type: 'expired',
+              message: data.error || "この履歴書の公開期限は終了しました"
+            });
+          } else {
+            // その他のエラー（404など）
           setResume(null);
+          }
           setIsLoading(false);
           return;
         }
@@ -73,6 +84,24 @@ export default function PublicResumePage({
     );
   }
   
+  // エラー状態（期限切れ）
+  if (error?.type === 'expired') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-base-100 px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FileText className="w-10 h-10 text-base-content/30" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">リンクの有効期限が切れました</h1>
+          <p className="text-base-content/60 mb-8">
+            この履歴書の公開期限は終了しました。<br />
+            最新のリンクについては、求職者に直接お問い合わせください。
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
   // 履歴書が見つからない
   if (!resume) {
     notFound();
@@ -95,7 +124,10 @@ export default function PublicResumePage({
           <div>
             <Heading>{resume.name_kanji}の履歴書</Heading>
             <p className="mt-2 text-base/6 text-base-content/50 sm:text-sm/6">
-              公開履歴書 • {new Date(resume.published_at).toLocaleDateString('ja-JP')} • Version {resume.version}
+              公開履歴書 • {new Date(resume.published_at).toLocaleDateString('ja-JP')}
+              {resume.public_expires_at && (
+                <span> • 有効期限: {new Date(resume.public_expires_at).toLocaleDateString('ja-JP')}</span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">

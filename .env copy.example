@@ -16,3 +16,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 STRIPE_PUBLIC_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# -----------------------------------------------------------------------------
+# OpenAI: For AI-powered resume parsing
+# -----------------------------------------------------------------------------
+OPENAI_API_KEY=

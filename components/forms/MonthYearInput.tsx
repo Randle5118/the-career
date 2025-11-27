@@ -51,7 +51,7 @@ export const MonthYearInput: React.FC<MonthYearInputProps> = ({
       <Input
         type="text"
         name="monthYear"
-        value={value}
+        value={value ?? ""}
         onChange={handleChange}
         onBlur={handleBlur}
         placeholder={placeholder}

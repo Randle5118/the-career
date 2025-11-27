@@ -59,7 +59,7 @@ export const SalaryDetailsInput: React.FC<SalaryDetailsInputProps> = ({
               label="月給下限（万円）"
               name="monthlyMin"
               type="number"
-              value={value.monthlyMin?.toString() || ""}
+              value={value.monthlyMin?.toString() ?? ""}
               onChange={(e) => onChange({
                 ...value,
                 monthlyMin: e.target.value ? Number(e.target.value) : undefined
@@ -72,7 +72,7 @@ export const SalaryDetailsInput: React.FC<SalaryDetailsInputProps> = ({
               label="月給上限（万円）"
               name="monthlyMax"
               type="number"
-              value={value.monthlyMax?.toString() || ""}
+              value={value.monthlyMax?.toString() ?? ""}
               onChange={(e) => onChange({
                 ...value,
                 monthlyMax: e.target.value ? Number(e.target.value) : undefined
@@ -87,7 +87,7 @@ export const SalaryDetailsInput: React.FC<SalaryDetailsInputProps> = ({
             label="賞与（ヶ月）"
             name="bonusMonths"
             type="number"
-            value={value.bonusMonths?.toString() || ""}
+            value={value.bonusMonths?.toString() ?? ""}
             onChange={(e) => onChange({
               ...value,
               bonusMonths: e.target.value ? Number(e.target.value) : undefined
@@ -105,7 +105,7 @@ export const SalaryDetailsInput: React.FC<SalaryDetailsInputProps> = ({
             label="年俸下限（万円）"
             name="annualMin"
             type="number"
-            value={value.annualMin?.toString() || ""}
+            value={value.annualMin?.toString() ?? ""}
             onChange={(e) => onChange({
               ...value,
               annualMin: e.target.value ? Number(e.target.value) : undefined
@@ -118,7 +118,7 @@ export const SalaryDetailsInput: React.FC<SalaryDetailsInputProps> = ({
             label="年俸上限（万円）"
             name="annualMax"
             type="number"
-            value={value.annualMax?.toString() || ""}
+            value={value.annualMax?.toString() ?? ""}
             onChange={(e) => onChange({
               ...value,
               annualMax: e.target.value ? Number(e.target.value) : undefined
@@ -134,7 +134,7 @@ export const SalaryDetailsInput: React.FC<SalaryDetailsInputProps> = ({
         <FormTextarea
           label="備考"
           name="salaryNotes"
-          value={value.notes || ""}
+          value={value.notes ?? ""}
           onChange={(e) => onChange({
             ...value,
             notes: e.target.value

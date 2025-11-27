@@ -44,7 +44,7 @@ export const FormField: React.FC<FormFieldProps> = ({
       <Input
         type={type}
         name={name}
-        value={value}
+        value={value || ""}
         onChange={onChange}
         placeholder={placeholder}
         required={required}

@@ -54,10 +54,25 @@ export interface DirectMethod {
 export type ApplicationMethod = JobSiteMethod | ReferralMethod | DirectMethod;
 
 // 簡化的薪資結構 - 只保留年薪範圍和備註
+export type SalaryStructureType = "monthly_with_bonus" | "annual";
+
 export interface SalaryDetails {
-  minAnnualSalary?: number;   // 年俸下限（万円）
-  maxAnnualSalary?: number;   // 年俸上限（万円）
-  notes?: string;             // 備考
+  type?: SalaryStructureType;
+  
+  // Common / Simple
+  minAnnualSalary?: number;
+  maxAnnualSalary?: number;
+  
+  // Monthly details
+  monthlyMin?: number;
+  monthlyMax?: number;
+  bonusMonths?: number;
+  
+  // Annual details (specific to annual type input)
+  annualMin?: number;
+  annualMax?: number;
+  
+  notes?: string;
 }
 
 export interface SalaryBreakdown {

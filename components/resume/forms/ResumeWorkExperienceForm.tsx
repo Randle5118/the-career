@@ -54,23 +54,14 @@ export default function ResumeWorkExperienceForm({
     () => ({
       id: crypto.randomUUID(),
       company_name: "",
-      industry: "",
+      industry: undefined,
       employment_type: undefined,
       department: undefined,
       start_date: "",
       end_date: null,
       is_current: false,
       description: undefined,
-      positions: [
-        {
-          id: crypto.randomUUID(),
-          title: "",
-          start_date: "",
-          end_date: null,
-          is_current: false,
-          comment: undefined,
-        },
-      ],
+      positions: [], // 預設為空，使用者可選擇是否新增
     })
   );
 
@@ -135,7 +126,7 @@ export default function ResumeWorkExperienceForm({
         ? {
             ...item,
             positions: [
-              ...item.positions,
+              ...(item.positions || []),
               {
                 id: crypto.randomUUID(),
                 title: "",
@@ -156,7 +147,7 @@ export default function ResumeWorkExperienceForm({
       i === expIndex
         ? {
             ...item,
-            positions: item.positions.filter((_, pi) => pi !== posIndex),
+            positions: (item.positions || []).filter((_, pi) => pi !== posIndex),
           }
         : item
     );
@@ -173,7 +164,7 @@ export default function ResumeWorkExperienceForm({
       i === expIndex
         ? {
             ...item,
-            positions: item.positions.map((pos, pi) => {
+            positions: (item.positions || []).map((pos, pi) => {
               if (pi === posIndex) {
                 const updatedPos = { ...pos, [field]: value };
                 if (field === "is_current" && value === true) {
@@ -299,11 +290,10 @@ export default function ResumeWorkExperienceForm({
                       <FormField
                         label="業種"
                         name={`work-${index}-industry`}
-                        value={exp.industry}
+                        value={exp.industry || ""}
                         onChange={(e) =>
-                          update(index, "industry", e.target.value)
+                          update(index, "industry", e.target.value || undefined)
                         }
-                        required
                       />
 
                       <div>
@@ -493,7 +483,7 @@ export default function ResumeWorkExperienceForm({
 
                     <div className="space-y-3">
                       <SortableList
-                        items={exp.positions}
+                        items={exp.positions || []}
                         onDragEnd={(e) => handlePositionDragEnd(index, e)}
                         renderItem={(pos, posIndex, posDragHandleProps) => {
                           const posKey = `${index}-${posIndex}`;

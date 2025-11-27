@@ -174,10 +174,10 @@ export default function ResumeViewPage({
         {/* コンテンツエリア */}
         <div className="pb-12">
           {activeTab === "basic" && <ResumeBasicInfo resume={resume} />}
-          {activeTab === "education" && <ResumeEducation education={resume.education} />}
-          {activeTab === "work" && <ResumeWorkExperience workExperience={resume.work_experience} />}
-          {activeTab === "skills" && <ResumeSkills skills={resume.skills} certifications={resume.certifications} />}
-          {activeTab === "languages" && <ResumeLanguagesAwards languages={resume.languages} awards={resume.awards} />}
+          {activeTab === "education" && <ResumeEducation resume={resume} />}
+          {activeTab === "work" && <ResumeWorkExperience resume={resume} />}
+          {activeTab === "skills" && <ResumeSkills resume={resume} />}
+          {activeTab === "languages" && <ResumeLanguagesAwards resume={resume} />}
         </div>
         
         {/* フッター */}

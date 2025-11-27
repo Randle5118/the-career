@@ -168,7 +168,7 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-base-content">{edu.school_name}</p>
-                    <p className="text-xs text-base-content/60">{edu.major} {edu.degree}</p>
+                    <p className="text-xs text-base-content/60">{edu.major}</p>
                   </div>
                 </div>
               ))}
@@ -198,8 +198,9 @@ export default function ResumeBasicInfo({ resume }: ResumeBasicInfoProps) {
                   <div className="flex-1">
                     <p className="text-sm font-medium text-base-content">{exp.company_name}</p>
                     <p className="text-xs text-base-content/60">
-                      {exp.industry}
-                      {exp.positions && exp.positions.length > 0 && ` · ${exp.positions[exp.positions.length - 1].title}`}
+                      {exp.industry && exp.industry}
+                      {exp.industry && exp.positions && exp.positions.length > 0 && ' · '}
+                      {exp.positions && exp.positions.length > 0 && exp.positions[exp.positions.length - 1].title}
                     </p>
                   </div>
                 </div>
