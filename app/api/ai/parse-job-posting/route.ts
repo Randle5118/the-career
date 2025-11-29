@@ -1,16 +1,33 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/libs/supabase/server";
+import { handleApiErrorResponse } from "@/libs/api-helpers";
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+} from "@/libs/rate-limit";
+import { parseJobDescription } from "@/libs/services/ai-service";
+
+/**
+ * Rate Limit 設定 (每分鐘 5 次)
+ */
+const JD_PARSER_RATE_LIMIT = {
+  windowMs: 60 * 1000,
+  maxRequests: 5,
+};
 
 /**
  * POST /api/ai/parse-job-posting
- * PDF求人票をn8n webhookに送信してパース
  * 
- * 認証が必要なエンドポイント
+ * 使用 AI 解析 Job Description
+ * - 接受純文字或 Base64 PDF (前端需先轉換)
+ * - 需要認證
+ * - 有 Rate Limit
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    // 1. 認証チェック
     const supabase = await createClient();
+    
+    // 1. 認證檢查
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -22,85 +39,90 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. リクエストボディを取得
-    const body = await req.json();
-    const { fileName, fileContent, fileSize } = body;
-
-    if (!fileName || !fileContent) {
-      return NextResponse.json(
-        { error: "ファイル情報が不足しています" },
-        { status: 400 }
-      );
-    }
-
-    // 3. ファイルサイズチェック (10MB)
-    if (fileSize > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: "ファイルサイズが大きすぎます（最大10MB）" },
-        { status: 400 }
-      );
-    }
-
-    // 4. n8n Webhook URL (環境変数から取得)
-    const webhookUrl = process.env.N8N_PARSE_JD_WEBHOOK_URL;
-
-    if (!webhookUrl) {
-      console.error("N8N_PARSE_JD_WEBHOOK_URL is not configured");
-      return NextResponse.json(
-        { error: "サービスが設定されていません" },
-        { status: 500 }
-      );
-    }
-
-    // 5. n8n Webhookに送信
-    // Convert base64 to binary buffer
-    const buffer = Buffer.from(fileContent, 'base64');
-    
-    // Create FormData with binary file
-    const formData = new FormData();
-    const blob = new Blob([buffer], { type: 'application/pdf' });
-    formData.append('file', blob, fileName);
-    formData.append('userId', user.id);
-    formData.append('userEmail', user.email || '');
-    formData.append('timestamp', new Date().toISOString());
-
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      body: formData,
+    // 2. Rate Limit 檢查
+    const identifier = `jd-parser:${user.id}`;
+    const rateLimitResult = checkRateLimit({
+      ...JD_PARSER_RATE_LIMIT,
+      identifier,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("n8n webhook error:", errorText);
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult.resetAt);
+    }
+
+    // 3. 取得輸入
+    const body = await req.json().catch(() => ({}));
+    const { textContent, fileName } = body;
+
+    if (!textContent || typeof textContent !== 'string') {
       return NextResponse.json(
-        { error: "PDF解析に失敗しました" },
-        { status: 500 }
+        { error: "テキスト内容は必須です" },
+        { status: 400 }
       );
     }
 
-    // 6. パース結果を返す
-    let parsedData;
-    const responseText = await response.text();
-    
-    try {
-      parsedData = JSON.parse(responseText);
-    } catch (jsonError) {
-      console.error("Failed to parse n8n response");
+    // 長度檢查
+    if (textContent.length > 50000) {
       return NextResponse.json(
-        { error: "サーバーからの応答が不正です" },
-        { status: 500 }
+        { error: "テキストが長すぎます（制限: 50000文字）" },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json({
+    console.log(`[JD Parser] Processing for user: ${user.id}, file: ${fileName || 'unknown'}`);
+
+    // 4. 呼叫 AI Service
+    const result = await parseJobDescription(textContent, user.id);
+
+    if (!result.success) {
+      const statusCode = getStatusCodeFromErrorCode(result.errorCode);
+      return NextResponse.json(
+        { 
+          error: result.errorCode,
+          message: result.error,
+          isRetryable: result.isRetryable,
+        },
+        { status: statusCode }
+      );
+    }
+
+    // 5. 成功回傳
+    const successResponse = NextResponse.json({
       success: true,
-      data: parsedData,
+      data: result.data
     });
+
+    successResponse.headers.set("X-RateLimit-Remaining", rateLimitResult.remaining.toString());
+    successResponse.headers.set("X-RateLimit-Reset", rateLimitResult.resetAt.toString());
+
+    return successResponse;
+
   } catch (error) {
-    console.error("Parse job posting error:", error);
-    return NextResponse.json(
-      { error: "予期しないエラーが発生しました" },
-      { status: 500 }
-    );
+    console.error("[JD Parser] Unexpected Error:", error);
+    return handleApiErrorResponse(error);
+  }
+}
+
+/**
+ * 根據錯誤碼取得 HTTP 狀態碼
+ */
+function getStatusCodeFromErrorCode(errorCode?: string): number {
+  switch (errorCode) {
+    case 'UNAUTHORIZED':
+      return 401;
+    case 'VALIDATION_ERROR':
+      return 400;
+    case 'AI_NOT_CONFIGURED':
+      return 500;
+    case 'AI_QUOTA_EXCEEDED':
+      return 503;
+    case 'AI_RATE_LIMIT':
+      return 429;
+    case 'AI_API_ERROR':
+    case 'EMPTY_RESPONSE':
+    case 'JSON_PARSE_ERROR':
+      return 502;
+    default:
+      return 500;
   }
 }

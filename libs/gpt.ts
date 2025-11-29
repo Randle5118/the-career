@@ -1,65 +1,67 @@
-import axios from 'axios';
-
 /**
- * OpenAI Chat Message 類型定義
+ * @deprecated 此檔案已棄用，請使用 @/libs/ai 模組
+ * 
+ * 遷移指南:
+ * - 舊: import { sendOpenAi } from '@/libs/gpt'
+ * - 新: import { callOpenAI, callOpenAIWithJSON } from '@/libs/ai'
+ * 
+ * 新的 AI 模組提供:
+ * - 更好的錯誤處理 (OpenAIError class)
+ * - JSON 模式支援 (callOpenAIWithJSON)
+ * - 統一的型別定義
+ * - Token 使用量追蹤
+ * 
+ * @see libs/ai/openai-client.ts
+ * @see libs/services/ai-service.ts
  */
+
+import { callOpenAI } from '@/libs/ai';
+
 export interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
 /**
- * Use this if you want to make a call to OpenAI GPT-4 for instance. userId is used to identify the user on openAI side.
+ * @deprecated 請使用 callOpenAI 或 callOpenAIWithJSON
  */
 export const sendOpenAi = async (
   messages: OpenAIMessage[],
   userId: number,
   max = 100,
   temp = 1
-) => {
-  const url = 'https://api.openai.com/v1/chat/completions';
-
-  console.log('Ask GPT >>>');
-  messages.map((m) =>
-    console.log(' - ' + m.role.toUpperCase() + ': ' + m.content)
+): Promise<string | null> => {
+  console.warn(
+    '[DEPRECATED] sendOpenAi is deprecated. Please use callOpenAI from @/libs/ai'
   );
 
-  const body = JSON.stringify({
-    model: 'gpt-4',
-    messages,
-    max_tokens: max,
-    temperature: temp,
-    user: userId,
-  });
+  if (messages.length < 2) {
+    console.error('[sendOpenAi] Need at least system and user message');
+    return null;
+  }
 
-  const options = {
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-  };
+  const systemMessage = messages.find(m => m.role === 'system');
+  const userMessage = messages.find(m => m.role === 'user');
+
+  if (!systemMessage || !userMessage) {
+    console.error('[sendOpenAi] Missing system or user message');
+    return null;
+  }
 
   try {
-    const res = await axios.post(url, body, options);
-
-    const answer = res.data.choices[0].message.content;
-    const usage = res?.data?.usage;
-
-    console.log('>>> ' + answer);
-    console.log(
-      'TOKENS USED: ' +
-        usage?.total_tokens +
-        ' (prompt: ' +
-        usage?.prompt_tokens +
-        ' / response: ' +
-        usage?.completion_tokens +
-        ')'
+    const response = await callOpenAI(
+      systemMessage.content,
+      userMessage.content,
+      {
+        userId: String(userId),
+        maxTokens: max,
+        temperature: temp,
+        jsonMode: false, // 舊版不強制 JSON
+      }
     );
-    console.log('\n');
-
-    return answer;
-  } catch (e) {
-    console.error('GPT Error: ' + e?.response?.status, e?.response?.data);
+    return response.content;
+  } catch (error) {
+    console.error('[sendOpenAi] Error:', error);
     return null;
   }
 };

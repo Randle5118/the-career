@@ -5,6 +5,8 @@ import Modal from "./Modal";
 import { Upload, FileText, X, AlertCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import type { ApplicationFormData } from "@/types/application";
+import type { ParsedJobDescription } from "@/libs/ai/types";
+import { extractTextFromPdf } from "@/libs/pdf/extract-text";
 
 interface PDFUploadModalProps {
   isOpen: boolean;
@@ -90,75 +92,134 @@ export default function PDFUploadModal({
     setError("");
 
     try {
-      // PDF を Base64 に変換
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // data:application/pdf;base64, を除去
-          const base64Data = result.split(",")[1];
-          resolve(base64Data);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // 1. PDF からテキストを抽出 (クライアントサイド)
+      console.log("[PDFUpload] Extracting text from PDF...");
+      const textContent = await extractTextFromPdf(file);
+      
+      if (!textContent || textContent.trim().length === 0) {
+        throw new Error("PDFからテキストを抽出できませんでした。スキャン画像のみのPDFは対応していません。");
+      }
 
-      // Next.js API Route に送信 (認証チェック含む)
+      console.log(`[PDFUpload] Text extracted, length: ${textContent.length}`);
+
+      // 2. AI Service API に送信
       const response = await fetch("/api/ai/parse-job-posting", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          textContent,
           fileName: file.name,
-          fileContent: base64,
-          fileSize: file.size,
         }),
       });
 
+      const result = await response.json();
+
+      // 3. エラーハンドリング (新しい API 形式)
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "PDF解析に失敗しました");
+        const errorMessage = result.message || result.error || "PDF解析に失敗しました";
+        const isRetryable = result.isRetryable ?? false;
+        
+        // Rate Limit エラーの場合
+        if (response.status === 429) {
+          throw new Error("解析リクエストが多すぎます。数分後に再度お試しください。");
+        }
+        
+        // Quota エラーの場合
+        if (result.error === "AI_QUOTA_EXCEEDED") {
+          throw new Error("AI解析サービスの利用枠が上限に達しました。管理者にお問い合わせください。");
+        }
+        
+        throw new Error(isRetryable ? `${errorMessage}（再試行可能）` : errorMessage);
       }
 
-      const result = await response.json();
+      // 4. ParsedJobDescription を ApplicationFormData に変換
+      const parsedData = result.data as ParsedJobDescription;
+      const normalizedData = transformParsedJobToApplicationForm(parsedData);
       
-      // n8n returns nested structure: { success: true, data: { success: true, data: {...} } }
-      let parsedData = result.data;
-      
-      // Handle nested response from n8n
-      if (parsedData && parsedData.data) {
-        parsedData = parsedData.data;
-      }
-      
-      // Convert snake_case to camelCase for TypeScript
-      // Only include non-null values
-      const normalizedData: Partial<ApplicationFormData> = {};
-      
-      if (parsedData.company_name) normalizedData.companyName = parsedData.company_name;
-      if (parsedData.company_url) normalizedData.companyUrl = parsedData.company_url;
-      if (parsedData.position) normalizedData.position = parsedData.position;
-      if (parsedData.status) normalizedData.status = parsedData.status;
-      if (parsedData.employment_type) normalizedData.employmentType = parsedData.employment_type;
-      if (parsedData.application_method) normalizedData.applicationMethod = parsedData.application_method;
-      if (parsedData.posted_salary) normalizedData.postedSalary = parsedData.posted_salary;
-      if (parsedData.desired_salary) normalizedData.desiredSalary = parsedData.desired_salary?.toString();
-      if (parsedData.tags && Array.isArray(parsedData.tags)) normalizedData.tags = parsedData.tags;
-      if (parsedData.notes) normalizedData.notes = parsedData.notes;
-      if (parsedData.schedule) normalizedData.schedule = parsedData.schedule;
-      
-      // 成功: データを親コンポーネントに渡す
+      // 5. 成功: データを親コンポーネントに渡す
       toast.success("PDFを解析しました");
       onParseSuccess(normalizedData);
       handleClose();
-    } catch (err: any) {
-      console.error("PDF upload error:", err);
-      const errorMessage = err.message || "PDF解析に失敗しました。もう一度お試しください。";
+    } catch (err: unknown) {
+      console.error("[PDFUpload] Error:", err);
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "PDF解析に失敗しました。もう一度お試しください。";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsUploading(false);
     }
+  };
+
+  /**
+   * ParsedJobDescription を ApplicationFormData に変換
+   */
+  const transformParsedJobToApplicationForm = (
+    parsed: ParsedJobDescription
+  ): Partial<ApplicationFormData> => {
+    const result: Partial<ApplicationFormData> = {};
+
+    // 基本情報
+    if (parsed.company_name) result.companyName = parsed.company_name;
+    if (parsed.company_url) result.companyUrl = parsed.company_url;
+    if (parsed.position_title) result.position = parsed.position_title;
+
+    // 雇用形態を変換
+    if (parsed.employment_type) {
+      const typeMapping: Record<string, ApplicationFormData["employmentType"]> = {
+        "正社員": "full_time",
+        "契約社員": "contract",
+        "派遣社員": "temporary",
+        "パート・アルバイト": "part_time",
+        "業務委託": "freelance",
+        "フリーランス": "freelance",
+      };
+      result.employmentType = typeMapping[parsed.employment_type] || "full_time";
+    }
+
+    // 給与情報
+    if (parsed.salary_range) {
+      result.postedSalary = {
+        minAnnualSalary: parsed.salary_range.min ?? undefined,
+        maxAnnualSalary: parsed.salary_range.max ?? undefined,
+        notes: parsed.benefits?.join("、"),
+      };
+    }
+
+    // タグ
+    if (parsed.tags && parsed.tags.length > 0) {
+      result.tags = parsed.tags;
+    }
+
+    // メモ (職務内容や要件をまとめて記載)
+    const noteParts: string[] = [];
+    if (parsed.job_description) {
+      noteParts.push(`【職務概要】\n${parsed.job_description}`);
+    }
+    if (parsed.responsibilities && parsed.responsibilities.length > 0) {
+      noteParts.push(`【業務内容】\n${parsed.responsibilities.map(r => `・${r}`).join("\n")}`);
+    }
+    if (parsed.requirements && parsed.requirements.length > 0) {
+      noteParts.push(`【必須条件】\n${parsed.requirements.map(r => `・${r}`).join("\n")}`);
+    }
+    if (parsed.preferred_qualifications && parsed.preferred_qualifications.length > 0) {
+      noteParts.push(`【歓迎条件】\n${parsed.preferred_qualifications.map(r => `・${r}`).join("\n")}`);
+    }
+    if (parsed.remote_policy) {
+      noteParts.push(`【リモート】${parsed.remote_policy}`);
+    }
+    if (parsed.work_location) {
+      noteParts.push(`【勤務地】${parsed.work_location}`);
+    }
+    
+    if (noteParts.length > 0) {
+      result.notes = noteParts.join("\n\n");
+    }
+
+    return result;
   };
 
   const handleClose = () => {

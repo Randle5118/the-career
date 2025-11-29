@@ -441,9 +441,11 @@ export default function PdfImporterModal({
                       className="border-2 border-dashed border-base-300 rounded-xl flex flex-col items-center justify-center p-8 hover:border-primary/50 hover:bg-base-200/30 transition-all cursor-pointer"
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
-                      onClick={() =>
-                        step === "upload" && fileInputRef.current?.click()
-                      }
+                      onClick={() => {
+                        if (step === "upload" && files.length < MAX_FILES) {
+                          fileInputRef.current?.click();
+                        }
+                      }}
                     >
                       <input
                         type="file"
